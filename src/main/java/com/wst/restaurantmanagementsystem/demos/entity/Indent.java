@@ -45,7 +45,7 @@ public class Indent implements Serializable{
 
 
     /**
-     * 创建时间/
+     * 创建时间
      */
     @TableField("gmt_create")
     private Date gmtCreate;
