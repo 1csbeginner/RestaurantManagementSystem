@@ -34,6 +34,7 @@ public class ProductServiceImpl implements ProductService {
         entity.setPicture(product.getPicture());
         entity.setName(product.getName());
         entity.setIntroduce(product.getIntroduce());
+        entity.setSort(product.getSort());
         entity.setPrice(product.getPrice());
         entity.setVipPrice(product.getPrice());
         entity.setIsDeleted(0);
@@ -66,6 +67,7 @@ public class ProductServiceImpl implements ProductService {
         entity.setId(product.getId());
         entity.setPicture(product.getPicture());
         entity.setName(product.getName());
+        entity.setSort(product.getSort());
         entity.setIntroduce(product.getIntroduce());
         entity.setPrice(product.getPrice());
         entity.setVipPrice(product.getVipPrice());

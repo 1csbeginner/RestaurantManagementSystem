@@ -29,6 +29,11 @@ public class Product implements Serializable{
      */
     @TableField("picture")
     private String picture;
+    /*
+        分类
+     */
+    @TableField("sort")
+    private String sort;
 
     /**
      * 名称
