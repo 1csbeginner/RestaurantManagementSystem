@@ -36,6 +36,7 @@ public class User implements Serializable{
     @TableField("name")
     private String name;
 
+
     /**
      * 密码
      */
@@ -55,6 +56,9 @@ public class User implements Serializable{
      */
     @TableField("is_vip")
     private Integer isVip;
+
+    @TableField("is_manager")
+    private Integer isManager;
 
     /**
      * 创建时间

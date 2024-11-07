@@ -36,6 +36,7 @@ public class UserServiceImpl implements UserService {
         entity.setPassword(user.getPassword());
         entity.setIntroduce(user.getIntroduce());
         entity.setIsVip(0);
+        entity.setIsManager(user.getIsManager());
         entity.setGmtCreate(TimeUtil.getTime());
         entity.setGmtModified(TimeUtil.getTime());
         return userMapper.insert(entity);
@@ -68,6 +69,7 @@ public class UserServiceImpl implements UserService {
         entity.setPassword(user.getPassword());
         entity.setIntroduce(user.getIntroduce());
         entity.setGmtModified(TimeUtil.getTime());
+        entity.setIsManager(user.getIsManager());
         return userMapper.updateById(entity);
     }
 }
