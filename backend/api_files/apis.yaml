@@ -1,0 +1,414 @@
+openapi: "3.1.0"
+info:
+  title: "RestaurantManagementSystem API"
+  description: "点餐系统API"
+  version: "1.0.0"
+servers:
+  - url: "http://localhost:8877"
+paths:
+  #indents
+  /indent/upload:
+    post:
+      summary: "POST indent/upload"
+      operationId: "uploadPicture"
+      parameters:
+        - name: "file"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+            format: "binary"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/R"
+  /indent/list/{current}/{pageSize}:
+    post:
+      summary: "POST indent/list/{current}/{pageSize}"
+      operationId: "selectPage"
+      parameters:
+        - name: "current"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "pageSize"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Indent"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/R"
+  /indent/add-one-indent:
+    post:
+      summary: "POST indent/add-one-indent"
+      operationId: "addIndentInfo"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Indent"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/R"
+  /indent/get-one-indent/{id}:
+    get:
+      summary: "GET indent/get-one-indent/{id}"
+      operationId: "getOneIndent"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int32"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/R"
+#用户
+  /user/upload:
+    post:
+      summary: "POST user/upload"
+      operationId: "uploadPicture"
+      parameters:
+        - name: "file"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+            format: "binary"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/R"
+  /user/list/{current}/{pageSize}:
+    post:
+      summary: "POST user/list/{current}/{pageSize}"
+      operationId: "selectPage"
+      parameters:
+        - name: "current"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "pageSize"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/R"
+  /user/add-one-user:
+    post:
+      summary: "POST user/add-one-user"
+      operationId: "addUserInfo"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/R"
+  /user/get-one-user/{id}:
+    get:
+      summary: "GET user/get-one-user/{id}"
+      operationId: "getOneUser"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int32"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/R"
+  /user/upd-one-user:
+    post:
+      summary: "POST user/upd-one-user"
+      operationId: "updOneUser"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/R"
+  /user/becomevip-one-user:
+    post:
+      summary: "POST user/becomevip-one-user"
+      operationId: "deleteOneUser"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/R"
+
+#菜
+  /product/upload:
+    post:
+      summary: "POST product/upload"
+      operationId: "uploadPicture"
+      parameters:
+        - name: "file"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+            format: "binary"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/R"
+  /product/list/{current}/{pageSize}:
+    post:
+      summary: "POST product/list/{current}/{pageSize}"
+      operationId: "selectPage"
+      parameters:
+        - name: "current"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "pageSize"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Product"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/R"
+  /product/add-one-product:
+    post:
+      summary: "POST product/add-one-product"
+      operationId: "addProductInfo"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Product"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/R"
+  /product/get-one-product/{id}:
+    get:
+      summary: "GET product/get-one-product/{id}"
+      operationId: "getOneProduct"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int32"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/R"
+  /product/upd-one-product:
+    post:
+      summary: "POST product/upd-one-product"
+      operationId: "updOneProduct"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Product"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/R"
+  /product/delete-one-product:
+    post:
+      summary: "POST product/delete-one-product"
+      operationId: "deleteOneProduct"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Product"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/R"
+components:
+  schemas:
+    Object:
+      type: "object"
+      properties: { }
+    R:
+      type: "object"
+      properties:
+        code:
+          type: "string"
+        message:
+          type: "string"
+        data:
+          $ref: "#/components/schemas/Object"
+    Indent:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int32"
+        preview:
+          type: "string"
+        tablenumber:
+          type: "integer"
+          format: "int32"
+        price:
+          type: "number"
+          format: "double"
+        gmtCreate:
+          type: "string"
+          format: "date-time"
+
+    User:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int32"
+        picture:
+          type: "string"
+        name:
+          type: "string"
+        password:
+          type: "string"
+        introduce:
+          type: "string"
+        isVip:
+          type: "integer"
+          format: "int32"
+        gmtCreate:
+          type: "string"
+          format: "date-time"
+        gmtModified:
+          type: "string"
+          format: "date-time"
+
+    Product:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int32"
+        picture:
+          type: "string"
+        sort:
+          type: "string"
+        name:
+          type: "string"
+        introduce:
+          type: "string"
+        price:
+          type: "number"
+          format: "double"
+        VipPrice:
+          type: "number"
+          format: "double"
+        isDeleted:
+          type: "integer"
+          format: "int32"
+        gmtCreate:
+          type: "string"
+          format: "date-time"
+        gmtModified:
+          type: "string"
+          format: "date-time"
