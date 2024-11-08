@@ -10,6 +10,10 @@
     "lint": "eslint . --fix"
   },
   "dependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
+    "axios": "^1.7.7",
+    "element": "^0.1.4",
+    "element-plus": "^2.8.7",
     "frontend": "file:",
     "less": "^4.2.0",
     "less-loader": "^12.2.0",
@@ -21,6 +25,8 @@
     "@vitejs/plugin-vue": "^5.1.4",
     "eslint": "^9.14.0",
     "eslint-plugin-vue": "^9.30.0",
+    "unplugin-auto-import": "^0.18.3",
+    "unplugin-vue-components": "^0.27.4",
     "vite": "^5.4.10"
   }
 }
