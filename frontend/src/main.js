@@ -4,7 +4,7 @@ import App from './App.vue'
 import router from './router'
 import './assets/global.css'
 
-import {ElForm, ElFormItem, ElInput, ElButton, ElMessage} from 'element-plus'
+import {ElForm, ElFormItem, ElInput, ElButton, ElMessage, ElHeader, ElContainer, ElAside} from 'element-plus'
 import 'element-plus/dist/index.css';
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
@@ -24,5 +24,8 @@ app.use(ElFormItem)
 app.use(ElInput)
 app.use(ElButton)
 app.use(ElMessage)
+app.use(ElHeader)
+app.use(ElContainer)
+app.use(ElAside)
 
 app.mount('#app')
