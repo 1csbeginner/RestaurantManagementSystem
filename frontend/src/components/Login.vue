@@ -98,10 +98,11 @@ export default {
         password: '',
         confirmPassword: ''
       },
+      existUser: false,
       registerFormRules: {
         name:[
           {required:true, message:'请输入用户名', trigger:'blur'},
-          {min:3, max:10, message:'长度在3到10个字符', trigger:'blur'}
+          {validator:this.validateUserName, trigger:'blur'}
         ],
         password:[
           {required:true, message:'请输入密码', trigger:'blur'}
@@ -122,6 +123,19 @@ export default {
     }
   },
   methods:{
+    async validateUserName(rule, value, callback) {
+    if (!value) {
+      callback(new Error('请输入用户名'));
+      return;
+    }
+    const { data: res } = await this.$http.post("user/list/1/9999", { name: value });
+    console.log(res.data.records[0]["name"]);
+    if (res.data.records[0]["name"] === this.registerForm.name) {
+      callback(new Error('用户名已存在'));
+    } else {
+      callback();
+    }
+  },
     toggleMode(){
       this.isLoginMode = !this.isLoginMode;
       this.loginForm = { name: '', password: '' };
@@ -146,13 +160,14 @@ export default {
         //console.log(valid) 验证成功返回true，验证失败返回false
         if (valid) {
           const {data : res} = await this.$http.post("user/list/1/9999", this.loginForm);
-          console.log(res)
+          console.log(res);
           if(res.data.total === 1){
             ElMessage({
               message: '登陆成功',
               type: 'success',
             })
             //保存登录状态
+            window.sessionStorage.setItem("name", this.loginForm.name);
             window.sessionStorage.setItem("isLogin", 'true');
             //跳转到首页
             this.$router.push("/home");
@@ -186,6 +201,7 @@ export default {
             });
 
             // 保存登录状态
+            window.sessionStorage.setItem("name", this.registerForm.name);
             window.sessionStorage.setItem("isLogin", 'true');
 
             // 跳转到首页
