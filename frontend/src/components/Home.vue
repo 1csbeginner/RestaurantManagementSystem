@@ -24,27 +24,42 @@
             text-color="#fff"
             @open="handleOpen"
             @close="handleClose"
+            @select="saveState"
             :collapse="isCollapse"
+            :router="true"
+            :default-active="activePath"
           >
-            <el-sub-menu index="1" v-if="!isManager">
+            <!--只有用户可见1和4的部分功能。管理员可见234。(通过调整v-if)-->
+            <el-sub-menu index="1" v-if="isManager">
               <template #title>
-                <el-icon><Dish /></el-icon>
+                <el-icon><KnifeFork /></el-icon>
                 <span>前台服务</span>
               </template>
-              <el-menu-item-group title="前台服务">
-                <el-menu-item index="1-1">
-                  <el-icon><location /></el-icon>
-                  item one
-                </el-menu-item>
-                <el-menu-item index="1-2">item two</el-menu-item>
-              </el-menu-item-group>
+              <el-menu-item index="/order">
+                <el-icon><food /></el-icon>
+                点菜
+              </el-menu-item>
+              <el-menu-item index="/pay" >
+                <el-icon><ShoppingCart /></el-icon>
+                结账
+              </el-menu-item>
             </el-sub-menu>
-            <el-menu-item index="2" v-if="isManager">
-              <el-icon><Management /></el-icon>
-              <span>后台服务</span>
-            </el-menu-item>
-            <el-menu-item index="3" v-if="isManager">
-              <el-icon><document /></el-icon>
+            <el-sub-menu index="2" v-if="isManager">
+              <template #title>
+                <el-icon><Collection /></el-icon>
+                <span>后台服务</span>
+              </template>
+              <el-menu-item index="/table" >
+                <el-icon><OfficeBuilding /></el-icon>
+                  台号管理
+              </el-menu-item>
+              <el-menu-item index="/dish" >
+                <el-icon><Dish /></el-icon>
+                  菜品管理
+              </el-menu-item>
+            </el-sub-menu>
+            <el-menu-item index="/data" v-if="isManager" >
+              <el-icon><DataAnalysis /></el-icon>
               <span>结账报表</span>
             </el-menu-item>
             <el-sub-menu index="4">
@@ -52,11 +67,11 @@
                 <el-icon><setting /></el-icon>
                 <span>系统安全</span>
               </template>
-              <el-menu-item index="4-1" v-if="isManager">
+              <el-menu-item index="/users" v-if="isManager" >
                 <el-icon><avatar /></el-icon>
                   用户管理
               </el-menu-item>
-              <el-menu-item index="4-2">
+              <el-menu-item index="/password" >
                 <el-icon><key /></el-icon>
                   修改密码
               </el-menu-item>
@@ -64,26 +79,35 @@
           </el-menu>
         </el-aside>
       <el-container>
-        <el-main>主界面</el-main>
+        <el-main>
+          <router-view></router-view>
+        </el-main>
       </el-container>
     </el-container>
   </el-container>
 </template>
 <script>
+import router from '@/router';
 
 
 export default{
   data(){
     return{
       isCollapse: false,
-      isManager: null
+      isManager: null,
+      activePath: sessionStorage.getItem('activePath') || this.$route.path
     }
   },
   async created() {
-    const name = sessionStorage.getItem('name');
-    const { data: res } = await this.$http.post('/user/list/1/9999', {name});
-    this.isManager = res.data.records[0]["isManager"];
-    console.log(res.data.records[0]);
+    const {data: res} = await this.$http.post('/user/list/1/9999', {name: sessionStorage.getItem('name')})
+    this.isManager = res.data.records[0].isManager
+    this.activePath = sessionStorage.getItem('activePath')
+  },
+  watch:{
+    '$route.path'(newPath){
+      this.activePath = newPath;
+      sessionStorage.setItem('activePath', newPath);
+    }
   },
   methods:{
     logout(){
@@ -92,6 +116,11 @@ export default{
     },
     toggleCollapse(){
       this.isCollapse = !this.isCollapse
+    },
+    //保存链接的激活状态
+    saveState(activePath){
+      this.activePath = activePath
+      sessionStorage.setItem('activePath', activePath);
     }
   }
 }
