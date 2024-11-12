@@ -22,7 +22,7 @@
         </el-input>
       </el-col>
       <el-col :span="4">
-        <el-button type="primary">添加用户</el-button>
+        <el-button type="primary" @click="openDialog">添加用户</el-button>
       </el-col>
     </el-row>
     <!--用户列表-->
@@ -53,6 +53,53 @@
       @current-change="handleCurrentChange"
     />
   </el-card>
+  <!--添加用户-->
+  <el-dialog
+    title="添加用户"
+    v-model="addDialogVisible"
+    width="50%"
+    @close="closeDialog"
+  >
+      <el-form
+       ref="addFormRef"
+       style="width: 500px;"
+       :model="addForm"
+       :rules="addFormRules"
+       label-width="200px"
+       status-icon
+      >
+        <el-form-item label="用户名" prop="name">
+          <el-input v-model="addForm.name" />
+        </el-form-item>
+        <el-form-item label="密码" prop="password">
+          <el-input type="password" v-model="addForm.password" />
+        </el-form-item>
+        <el-form-item label="确认密码" prop="confirmPassword">
+          <el-input type="password" v-model="addForm.confirmPassword" />
+        </el-form-item>
+        <el-form-item label="是否为会员" prop="isVip">
+          <el-radio-group v-model="addForm.isVip">
+            <el-radio value="是">是</el-radio>
+            <el-radio value="否">否</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="是否为管理员" prop="isManager">
+          <el-radio-group v-model="addForm.isManager">
+            <el-radio value="是">是</el-radio>
+            <el-radio value="否">否</el-radio>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="closeDialog">Cancel</el-button>
+        <el-button type="primary" @click="closeDialog">
+          Confirm
+        </el-button>
+      </div>
+    </template>
+  </el-dialog>
 </template>
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'; // 导入 Vue 的功能
@@ -70,6 +117,86 @@ const queryInfo = ref({
 });
 const userList = ref([]); // 定义用户列表
 const total = ref(0);
+// 添加用户对话框是否可见
+const addDialogVisible = ref(false);
+const addFormRef = ref(null);
+const openDialog = () => {
+  console.log('打开');
+  addDialogVisible.value = true;
+  console.log(addDialogVisible.value);
+};
+const closeDialog = () => {
+  addFormRef.value.resetFields();
+  addDialogVisible.value = false;
+};
+//用户表单
+const addForm = ref({
+  name: '',
+  password: '',
+  confirmPassword: '',
+  isVip: false,
+  isManager: false
+});
+const validateUserName = async (rule, value, callback)=> {
+  if (!value) {
+    callback(new Error('请输入用户名'));
+    return;
+  }
+
+  try {
+    // 调用 getUserList 函数来检查是否有相同用户名
+    const exists = await checkUserNameExists(value);
+    if (exists) {
+      callback(new Error('用户名已存在'));
+    } else {
+      callback();
+    }
+  } catch (error) {
+    console.error(error);
+    callback(new Error('检查用户名时出错'));
+  }
+};
+// 检查用户名是否存在
+const checkUserNameExists = async (name: string): Promise<boolean> => {
+  console.log(name);
+  const { data: res } = await axios.post("user/list/1/9999", { name : addForm.value.name });
+  // 检查 records 是否存在且有元素
+  if (res.data.records && res.data.records.length > 0) {
+    return res.data.records[0].name === addForm.value.name;
+  } else {
+    // 如果没有找到用户，返回 false
+    return false;
+  }
+};
+//规则不能是函数。
+const addFormRules = ref({
+  name: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { validator: validateUserName, trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请输入确认密码', trigger: 'blur' },
+    { validator: (rule: any, value: string, callback: Function) => {
+        if (value !== addForm.value.password) {
+          callback(new Error('两次输入的密码不一致'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'blur'
+    }
+  ],
+  isVip:[
+    { required: true, message: '请选择是否为会员', trigger: 'blur' }
+  ],
+  isManager:[
+    { required: true, message: '请选择是否为管理员', trigger: 'blur' }
+  ]
+});
+
 
 const getUserList = async () => {
 // 定义获取用户列表的方法
