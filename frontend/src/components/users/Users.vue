@@ -34,12 +34,12 @@
       <el-table-column prop="isManager" label="管理员">
         <template v-slot="scope">
           <!-- 使用 el-switch 控件，绑定 isManager -->
-          <el-switch v-model="scope.row.isManager" @change="userChange(scope.row)"/>
+          <el-switch v-model="scope.row.isManager" @change="userChange(scope.row)" :disabled="scope.row.name === currentName"/>
         </template>
       </el-table-column>
       <el-table-column label="操作">
         <template v-slot="scope">
-          <el-button type="danger" :icon="Delete"/>
+          <el-button type="danger" :icon="Delete" :disabled="scope.row.name === currentName"/>
         </template>
       </el-table-column>
     </el-table>
@@ -95,6 +95,7 @@ const handleSizeChange = (newSize) => {
   queryInfo.value.pagesize = newSize;
   getUserList();
 };
+const currentName = ref(sessionStorage.getItem("name"));
 //当前页
 const handleCurrentChange = (newPage) => {
   queryInfo.value.pagenum = newPage;
