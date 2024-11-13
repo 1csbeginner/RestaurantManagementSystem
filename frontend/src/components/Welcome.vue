@@ -17,17 +17,22 @@ export default {
   },
   async created() {
     // 获取 sessionStorage 中的用户名
-    this.name = sessionStorage.getItem('name');
-    console.log(this.name);
+    this.id=sessionStorage.getItem('id');
+    console.log(this.id);
 
     // 判断用户名是否存在
-    if (this.name) {
+    if (this.id) {
       try {
-        const { data: res } = await this.$http.post('/user/list/1/9999', { name: this.name });
-        if (res.data.records && res.data.records.length > 0) {
+        const id = this.id;
+        const url = `/user/get-one-user/${id}`; // 使用模板字符串拼接 URL
+        const { data: res } = await this.$http.get(url); // 发起请求
+
+        console.log(res);
+        if (res.message === '查询成功') {
           // 更新 isManager 和 isVip 状态
-          this.isManager = res.data.records[0].isManager;
-          this.isVip = res.data.records[0].isVip;
+          this.name = res.data.name;
+          this.isManager = res.data.isManager;
+          this.isVip = res.data.isVip;
         } else {
           console.error('未找到相关用户信息');
         }

@@ -14,8 +14,14 @@
         <el-input placeholder="请输入用户名搜索"
           v-model="queryInfo.query"
           clearable
-          @clear="getUserList"
+          @clear="defaultGetUserList"
         >
+          <template #prepend>
+            <el-select v-model="searchType" placeholder="选择查询方式" style="width: 120px">
+             <el-option label="用户名" value="name" />
+             <el-option label="ID" value="id" />
+            </el-select>
+          </template>
           <template #append>
             <el-button :icon="Search" @click="getUserList"/>
           </template>
@@ -235,27 +241,74 @@ const addUser = async () => {
   }
 };
 
-const getUserList = async () => {
-  // 定义获取用户列表的方法
-  const queryParam = {
-    name: queryInfo.value.query,  // 将查询条件直接作为用户名字段传递
-  };
-
+//搜索类型
+const searchType = ref('name');
+// 获取通过 ID 查询用户
+const getUserById = async () => {
   try {
+    const removedUsers = JSON.parse(localStorage.getItem('removedUsers') || '[]');  // 获取已删除的用户列表
+
+    // 发起 GET 请求，根据 ID 查询用户
+    const { data: res } = await axios.get(`/user/get-one-user/${queryInfo.value.query}`);
+
+    // 如果返回的 data 不是数组而是单个对象，直接将该对象添加到 userList 中
+    if (res.data) {
+      const user = res.data;
+      console.log(user);
+
+      // 过滤已删除的用户
+      if (!removedUsers.includes(user.id)) {
+        userList.value = [user];  // 将单个用户对象放入数组
+      } else {
+        userList.value = [];  // 如果该用户已被删除，则清空列表
+      }
+      total.value = userList.value.length;  // 更新用户总数
+      userList.value = userList.value.map(item => {
+        return {
+          ...item,
+          isManager: item.isManager ? true : false,
+          isVip: item.isVip ? '是' : '否',
+        };
+      });
+    }else {
+    // 如果没有用户数据，清空列表并提示用户
+    userList.value = [];
+    total.value = 0;
+    ElMessage.warning('未找到匹配的用户');
+  }
+
+  } catch (error) {
+    ElMessage.error('用户不存在');
+  }
+};
+
+//默认方式
+const defaultGetUserList = () => {
+  queryInfo.value.query = '';
+  searchType.value = 'name';
+  getUserList();
+};
+// 获取通过用户名查询用户列表
+const getUserListByName = async () => {
+  try {
+    const removedUsers = JSON.parse(localStorage.getItem('removedUsers') || '[]');  // 获取已删除的用户列表
+
+    const queryParam = {
+      name: queryInfo.value.query,  // 查询条件为用户名
+    };
+
+    // 发起 POST 请求，根据用户名查询用户列表
     const { data: res } = await axios.post(
       `/user/list/${queryInfo.value.pagenum}/${queryInfo.value.pagesize}`,
       queryParam
     );
 
-    // 从 localStorage 获取已删除的用户ID列表
-    const removedUsers = JSON.parse(localStorage.getItem('removedUsers') || '[]');
-
-    // 过滤掉已删除的用户
+    // 过滤已删除的用户
     const filteredUsers = res.data.records.filter(user => !removedUsers.includes(user.id));
 
-    // 更新用户列表
+    // 更新用户列表和总数
     userList.value = filteredUsers;
-    total.value = res.data.total; // 将用户总数赋值给 total
+    total.value = res.data.total;
 
     // 映射 isManager 和 isVip 字段
     userList.value = userList.value.map(item => {
@@ -270,6 +323,16 @@ const getUserList = async () => {
     console.error('获取用户列表失败', error);
   }
 };
+
+// 查询用户列表，根据 searchType 来决定查询方式
+const getUserList = async () => {
+  if (searchType.value === 'id') {
+    await getUserById();  // 通过 ID 查询
+  } else {
+    await getUserListByName();  // 通过用户名查询
+  }
+};
+
 
 //一页多少条
 const handleSizeChange = (newSize) => {
@@ -298,6 +361,7 @@ const userChange = async (row) => {
 };
 //删除用户提示
 import { ElMessageBox } from 'element-plus'
+import { s } from 'vite/dist/node/types.d-aGj9QkWt';
 
 const remove = (userId) => {
   ElMessageBox.confirm(

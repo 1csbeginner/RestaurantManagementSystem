@@ -103,8 +103,11 @@ export default{
     }
   },
   async created() {
-    const {data: res} = await this.$http.post('/user/list/1/9999', {name: sessionStorage.getItem('name')})
-    this.isManager = res.data.records[0].isManager
+    const id = sessionStorage.getItem('id'); // 获取 id
+    const url = `/user/get-one-user/${id}`; // 使用模板字符串拼接 URL
+    const { data: res } = await this.$http.get(url); // 发起请求
+
+    this.isManager = res.data.isManager
     this.activePath = sessionStorage.getItem('activePath')
   },
   watch:{
