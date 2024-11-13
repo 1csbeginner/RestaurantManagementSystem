@@ -20,10 +20,7 @@
       <el-table-column prop="isVip" label="会员"></el-table-column>
       <!--修改用户（需要提供用户id）-->
       <el-table-column prop="isManager" label="管理员">
-        <template v-slot="scope">
-          <!-- 使用 el-switch 控件，绑定 isManager -->
-          <el-switch v-model="scope.row.isManager" @change="userChange(scope.row)" :disabled="scope.row.name === currentName"/>
-        </template>
+
       </el-table-column>
       <el-table-column label="操作">
         <template v-slot="scope">
@@ -64,18 +61,6 @@
         </el-form-item>
         <el-form-item label="确认密码" prop="confirmPassword">
           <el-input type="password" v-model="addForm.confirmPassword" />
-        </el-form-item>
-        <el-form-item label="是否为会员" prop="isVip">
-          <el-radio-group v-model="addForm.isVip">
-            <el-radio value="是">是</el-radio>
-            <el-radio value="否">否</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="是否为管理员" prop="isManager">
-          <el-radio-group v-model="addForm.isManager">
-            <el-radio value="是">是</el-radio>
-            <el-radio value="否">否</el-radio>
-          </el-radio-group>
         </el-form-item>
       </el-form>
 
@@ -217,31 +202,23 @@ const addUser = async () => {
 };
 
 const getUserList = async () => {
-  // 定义获取用户列表的方法
+// 定义获取用户列表的方法
   const queryParam = {
-    name: queryInfo.value.query,  // 将查询条件直接作为用户名字段传递
+    name: queryInfo.value.query  // 将查询条件直接作为用户名字段传递
   };
+  const { data: res } = await axios.post(`/product/list/${queryInfo.value.pagenum}/${queryInfo.value.pagesize}`,
+  queryParam);
 
-  try {
-    const { data: res } = await axios.post(
-      `/user/list/${queryInfo.value.pagenum}/${queryInfo.value.pagesize}`,
-      queryParam
-    );
+  userList.value = res.data.records; // 将用户列表数据赋值给 userList
+  total.value= res.data.total; // 将用户总数赋值给 total
 
-    // 从 localStorage 获取已删除的用户ID列表
-    const removedUsers = JSON.parse(localStorage.getItem('removedUsers') || '[]');
-
-    // 过滤掉已删除的用户
-    const filteredUsers = res.data.records.filter(user => !removedUsers.includes(user.id));
-
-    // 更新用户列表
-    userList.value = filteredUsers;
-    total.value = res.data.total; // 将用户总数赋值给 total
-
-
-  } catch (error) {
-    console.error('获取用户列表失败', error);
-  }
+  userList.value = userList.value.map(item => {
+    return {
+      ...item,
+      isManager: item.isManager ? true : false,
+      isVip: item.isVip ? '是' : '否',
+    };
+  });
 };
 
 //一页多少条

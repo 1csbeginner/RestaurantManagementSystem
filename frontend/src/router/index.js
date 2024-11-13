@@ -3,8 +3,9 @@ import Login from '../components/Login.vue'
 import Home from '../components/Home.vue'
 import Welcome from '../components/Welcome.vue'
 import Users from '../components/users/Users.vue'
-import Info from '../components/info/Info.vue'
-import Category from '../components/category/Category.vue'
+import Info from '../components/users/Info.vue'
+import Category from '../components/product/Category.vue'
+import Dish from '../components/product/Products.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -18,7 +19,8 @@ const router = createRouter({
       {path : '/welcome', component: Welcome},
       {path : '/users', component: Users},
       {path : '/info', component: Info},
-      {path : '/category', component: Category}
+      {path : '/category', component: Category},
+      {path : '/dish', component: Dish}
       ]
     }
   ],
