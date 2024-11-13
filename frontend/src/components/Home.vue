@@ -71,9 +71,9 @@
                 <el-icon><avatar /></el-icon>
                   用户管理
               </el-menu-item>
-              <el-menu-item index="/password" >
+              <el-menu-item index="/info" >
                 <el-icon><key /></el-icon>
-                  修改密码
+                  修改信息
               </el-menu-item>
             </el-sub-menu>
           </el-menu>

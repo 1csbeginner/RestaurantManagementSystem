@@ -39,7 +39,7 @@
       </el-table-column>
       <el-table-column label="操作">
         <template v-slot="scope">
-          <el-button type="danger" :icon="Delete" :disabled="scope.row.name === currentName"/>
+          <el-button type="danger" :icon="Delete" :disabled="scope.row.name === currentName" @click="remove(scope.row.id)"/>
         </template>
       </el-table-column>
     </el-table>
@@ -57,7 +57,7 @@
   <el-dialog
     title="添加用户"
     v-model="addDialogVisible"
-    width="50%"
+    width="750px"
     @close="closeDialog"
   >
       <el-form
@@ -93,9 +93,9 @@
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="closeDialog">Cancel</el-button>
-        <el-button type="primary" @click="closeDialog">
-          Confirm
+        <el-button @click="closeDialog">取消</el-button>
+        <el-button type="primary" @click="addUser">
+            确定
         </el-button>
       </div>
     </template>
@@ -196,27 +196,81 @@ const addFormRules = ref({
     { required: true, message: '请选择是否为管理员', trigger: 'blur' }
   ]
 });
+//添加用户
+const addUser = async () => {
+  try {
+    // 校验表单
+    await addFormRef.value.validate();
 
+    // 创建一个新的表单数据对象
+    const formData = { ...addForm.value };
+
+    // 删除 confirmPassword 字段，避免传递到后台
+    delete formData.confirmPassword;
+
+    // 映射 isVip 和 isManager 为 1 或 0
+    const mappedUser = {
+      ...formData,
+      //可以正常运行但是不知道为什么红了。。
+      isVip: formData.isVip === '是' ? 1 : 0,  // 映射 isVip
+      isManager: formData.isManager === '是' ? 1 : 0  // 映射 isManager
+    };
+
+    console.log(mappedUser);  // 输出修改后的数据以进行调试
+
+    // 发送请求到后端
+    const { data: res } = await axios.post('/user/add-one-user', mappedUser);
+
+    // 根据返回的消息进行提示
+    if (res.message === "新增用户成功！") {
+      ElMessage.success('添加用户成功！');
+      closeDialog();  // 关闭对话框
+      getUserList();  // 更新用户列表
+    } else {
+      ElMessage.error('添加用户失败！');
+    }
+  } catch (error) {
+    console.error(error);
+    ElMessage.error('添加用户失败！');
+  }
+};
 
 const getUserList = async () => {
-// 定义获取用户列表的方法
+  // 定义获取用户列表的方法
   const queryParam = {
-    name: queryInfo.value.query  // 将查询条件直接作为用户名字段传递
+    name: queryInfo.value.query,  // 将查询条件直接作为用户名字段传递
   };
-  const { data: res } = await axios.post(`/user/list/${queryInfo.value.pagenum}/${queryInfo.value.pagesize}`,
-  queryParam);
 
-  userList.value = res.data.records; // 将用户列表数据赋值给 userList
-  total.value= res.data.total; // 将用户总数赋值给 total
+  try {
+    const { data: res } = await axios.post(
+      `/user/list/${queryInfo.value.pagenum}/${queryInfo.value.pagesize}`,
+      queryParam
+    );
 
-  userList.value = userList.value.map(item => {
-    return {
-      ...item,
-      isManager: item.isManager ? true : false,
-      isVip: item.isVip ? '是' : '否',
-    };
-  });
+    // 从 localStorage 获取已删除的用户ID列表
+    const removedUsers = JSON.parse(localStorage.getItem('removedUsers') || '[]');
+
+    // 过滤掉已删除的用户
+    const filteredUsers = res.data.records.filter(user => !removedUsers.includes(user.id));
+
+    // 更新用户列表
+    userList.value = filteredUsers;
+    total.value = res.data.total; // 将用户总数赋值给 total
+
+    // 映射 isManager 和 isVip 字段
+    userList.value = userList.value.map(item => {
+      return {
+        ...item,
+        isManager: item.isManager ? true : false,
+        isVip: item.isVip ? '是' : '否',
+      };
+    });
+
+  } catch (error) {
+    console.error('获取用户列表失败', error);
+  }
 };
+
 //一页多少条
 const handleSizeChange = (newSize) => {
   queryInfo.value.pagesize = newSize;
@@ -242,7 +296,45 @@ const userChange = async (row) => {
     ElMessage.error('修改用户信息失败！');
   }
 };
+//删除用户提示
+import { ElMessageBox } from 'element-plus'
 
+const remove = (userId) => {
+  ElMessageBox.confirm(
+    '确认删除用户吗？',
+    '警告',
+    {
+      confirmButtonText: '确认',
+      cancelButtonText: '取消',
+      type: 'warning',
+    }
+  )
+    .then(() => {
+      // 假设 userList 是你的用户列表
+      const index = userList.value.findIndex(user => user.id === userId);
+
+      if (index !== -1) {
+        // 删除该条目
+        userList.value.splice(index, 1);
+
+        // 存储删除记录到 localStorage
+        const removedUsers = JSON.parse(localStorage.getItem('removedUsers') || '[]');
+        removedUsers.push(userId);
+        localStorage.setItem('removedUsers', JSON.stringify(removedUsers));
+
+        ElMessage({
+          type: 'success',
+          message: '删除成功',
+        });
+      }
+    })
+    .catch(() => {
+      ElMessage({
+        type: 'info',
+        message: '取消删除',
+      });
+    });
+};
 // 在组件挂载时调用 getUserList
 onMounted(() => {
   getUserList();

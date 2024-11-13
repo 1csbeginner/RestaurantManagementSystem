@@ -5,17 +5,20 @@
 </template>
 
 <script>
+
 export default {
   data() {
     return {
       isManager: null,
       isVip: null,
-      name: null
+      name: null,
+      id: null
     };
   },
   async created() {
     // 获取 sessionStorage 中的用户名
     this.name = sessionStorage.getItem('name');
+    console.log(this.name);
 
     // 判断用户名是否存在
     if (this.name) {

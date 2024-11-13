@@ -160,13 +160,16 @@ export default {
         if (valid) {
           const {data : res} = await this.$http.post("user/list/1/9999", this.loginForm);
           console.log(res);
-          if(res.data.total === 1){
+          //同时验证用户名和密码（因为模糊匹配会导致只要用户名正确就可以登录）
+          if(res.data.total === 1 && res.data.records[0].password === this.loginForm.password && res.data.records[0].name === this.loginForm.name){
             ElMessage({
               message: '登陆成功',
               type: 'success',
             })
             //保存登录状态
+            window.sessionStorage.setItem("id", res.data.records[0].id);
             window.sessionStorage.setItem("name", this.loginForm.name);
+            window.sessionStorage.setItem("password", this.loginForm.password);
             window.sessionStorage.setItem("isLogin", 'true');
             //跳转到首页
             this.$router.push("/home");
