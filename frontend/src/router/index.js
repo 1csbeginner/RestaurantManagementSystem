@@ -4,6 +4,7 @@ import Home from '../components/Home.vue'
 import Welcome from '../components/Welcome.vue'
 import Users from '../components/users/Users.vue'
 import Info from '../components/info/Info.vue'
+import Category from '../components/category/Category.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -16,7 +17,8 @@ const router = createRouter({
        children: [
       {path : '/welcome', component: Welcome},
       {path : '/users', component: Users},
-      {path : '/info', component: Info}
+      {path : '/info', component: Info},
+      {path : '/category', component: Category}
       ]
     }
   ],
