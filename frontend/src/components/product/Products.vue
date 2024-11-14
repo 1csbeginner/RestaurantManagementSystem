@@ -108,47 +108,26 @@
           />
         </el-form-item>
         <el-form-item label="图片" prop="picture">
-          <el-upload
-            action="/upload"
-            :auto-upload="true"
-            list-type="picture-card"
-            :on-success="handleUploadSuccess"
-            :on-remove="handleRemove"
-          >
+            <el-upload
+              action="/product/upload"
+              list-type="picture-card"
+              :on-success="handleUploadSuccess"
+              :on-remove="handleRemove"
+              :file-list="fileList"
+              :disabled="disabled"
+              :before-upload="beforeUpload"
+            >
               <el-icon><Plus /></el-icon>
 
-              <template #file="{ file }">
-                <div>
-                  <img class="el-upload-list__item-thumbnail" :src="file.url" alt="" />
-                  <span class="el-upload-list__item-actions">
-                    <span
-                      class="el-upload-list__item-preview"
-                      @click="handlePictureCardPreview(file)"
-                    >
-                      <el-icon><zoom-in /></el-icon>
-                    </span>
-                    <span
-                      v-if="!disabled"
-                      class="el-upload-list__item-delete"
-                      @click="handleDownload(file)"
-                    >
-                      <el-icon><Download /></el-icon>
-                    </span>
-                    <span
-                      v-if="!disabled"
-                      class="el-upload-list__item-delete"
-                      @click="handleRemove(file)"
-                    >
-                      <el-icon><Delete /></el-icon>
-                    </span>
-                  </span>
-                </div>
-              </template>
             </el-upload>
 
-            <el-dialog v-model="dialogVisible">
-              <img w-full :src="dialogImageUrl" alt="Preview Image" />
+            <!-- 图片预览弹框 -->
+            <el-dialog :visible.sync="dialogVisible" size="tiny">
+              <img alt="image" width="100%" :src="dialogImageUrl" />
             </el-dialog>
+
+            <!-- 修改图片按钮 -->
+            <el-button @click="handleModifyImage">修改图片</el-button>
             </el-form-item>
         </el-form>
 
@@ -256,9 +235,10 @@ const addproduct = async () => {
     await addFormRef.value.validate();
 
     // 创建一个新的表单数据对象
-    const formData = { ...addForm.value };
-
-    // 映射 isVip 和 isManager 为 1 或 0
+    const formData = {
+      ...addForm.value,
+      picture: uploadForm.value.picture,  // 合并图片信息
+    };
 
 
     // 发送请求到后端
@@ -374,26 +354,54 @@ const remove = (productId) => {
 };
 
 //图片操作
-const dialogImageUrl = ref('')
-const dialogVisible = ref(false)
-const disabled = ref(false)
+const fileList = ref([]) // 用于保存上传的文件列表
+const dialogImageUrl = ref('') // 用于保存预览图片的 URL
+const dialogVisible = ref(false) // 控制预览弹窗的显示
+const disabled = ref(false) // 是否禁用上传
+const oldImageUrl = ref('') // 用于保存原来的图片 URL（如果有）
+const uploadForm = ref({ file: '' }) // 假设这是你的表单数据
 
-const handleUploadSuccess = (res: any, file: UploadFile) => {
-  console.log(res, file)
-  addForm.value.picture = res.data.url
-}
-const handleRemove = (file: UploadFile) => {
-  console.log(file)
-}
 
-const handlePictureCardPreview = (file: UploadFile) => {
-  dialogImageUrl.value = file.url!
-  dialogVisible.value = true
-}
+// 图片选择变化时调用
+const handleFileChange = (event) => {
+  const file = event.target.files[0];  // 获取选中的文件
+  if (file) {
+    uploadForm.value.picture = file;  // 将文件存储在 uploadForm 中
+  }
+};
 
-const handleDownload = (file: UploadFile) => {
-  console.log(file)
-}
+// 图片上传
+const uploadFile = async () => {
+  // 判断是否选择了文件
+  if (!uploadForm.value.picture) {
+    ElMessage.error('请先选择一个文件');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('file', uploadForm.value.picture);  // 将文件附加到 form-data
+  console.log(formData)
+
+  try {
+    // 使用 axios 发送文件上传请求
+    const response = await axios.post('/product/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data', // 确保上传时是 multipart 格式
+      },
+    });
+
+    // 上传成功处理
+    if (response.data.success) {
+      ElMessage.success('文件上传成功');
+      console.log('上传成功：', response.data);
+    } else {
+      ElMessage.error('上传失败');
+    }
+  } catch (error) {
+    console.error('上传错误：', error);
+    ElMessage.error('文件上传失败');
+  }
+};
 // 在组件挂载时调用 getproductList
 onMounted(() => {
   getproductList();
