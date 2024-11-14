@@ -88,6 +88,10 @@ public class ProductController {
         if (!StringUtils.isEmpty(name)){
             wrapper.like("name",name);
         }
+        String sort = product.getSort();
+        if (!StringUtils.isEmpty(sort)){
+            wrapper.like("sort",sort);
+        }
         wrapper.eq("is_deleted","0");
         wrapper.orderByDesc("gmt_modified");
 
