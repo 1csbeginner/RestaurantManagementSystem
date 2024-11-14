@@ -4,7 +4,6 @@ import Home from '../components/Home.vue'
 import Welcome from '../components/Welcome.vue'
 import Users from '../components/users/Users.vue'
 import Info from '../components/users/Info.vue'
-import Category from '../components/product/Category.vue'
 import Dish from '../components/product/Products.vue'
 
 const router = createRouter({
@@ -19,7 +18,6 @@ const router = createRouter({
       {path : '/welcome', component: Welcome},
       {path : '/users', component: Users},
       {path : '/info', component: Info},
-      {path : '/category', component: Category},
       {path : '/dish', component: Dish}
       ]
     }

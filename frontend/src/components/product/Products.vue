@@ -30,7 +30,7 @@
         </el-input>
       </el-col>
       <el-col :span="4">
-        <el-button type="primary" @click="openDialog">添加菜品</el-button>
+        <el-button type="primary" @click="openAddDialog">添加菜品</el-button>
       </el-col>
     </el-row>
     <!--用户列表-->
@@ -55,7 +55,7 @@
       <el-table-column prop="sort" label="菜系"></el-table-column>
       <el-table-column label="操作">
         <template v-slot="scope">
-          <el-button type="primary" :icon="Edit"  @click="remove(scope.row.id)"/>
+          <el-button type="primary" :icon="Edit"  @click="modify(scope.row.id)"/>
           <el-button type="danger" :icon="Delete" @click="remove(scope.row.id)"/>
         </template>
       </el-table-column>
@@ -70,32 +70,32 @@
       @current-change="handleCurrentChange"
     />
   </el-card>
-  <!--添加用户-->
+  <!--添加-->
   <el-dialog
-    title="添加菜系"
+    title="添加菜品"
     v-model="addDialogVisible"
     width="750px"
-    @close="closeDialog"
+    @close="closeAddDialog"
   >
       <el-form
-       ref="addFormRef"
+       ref="productFromRef"
        style="width: 500px;"
-       :model="addForm"
-       :rules="addFormRules"
+       :model="productFrom"
+       :rules="productFromRules"
        label-width="200px"
        status-icon
       >
         <el-form-item label="名称" prop="name">
-          <el-input v-model="addForm.name" />
+          <el-input v-model="productFrom.name" />
         </el-form-item>
         <el-form-item label="定价" prop="price">
-          <el-input v-model="addForm.price" />
+          <el-input v-model="productFrom.price" />
         </el-form-item>
-        <el-form-item label="会员价" prop="vip_price">
-          <el-input  v-model="addForm.vip_price" />
+        <el-form-item label="会员价" prop="VipPrice">
+          <el-input  v-model="productFrom.VipPrice" />
         </el-form-item>
         <el-form-item label="菜系" prop="sort">
-          <el-input  v-model="addForm.sort" />
+          <el-input  v-model="productFrom.sort" />
         </el-form-item>
         <el-form-item label="描述" prop="introduce">
           <el-input
@@ -108,33 +108,102 @@
           />
         </el-form-item>
         <el-form-item label="图片" prop="picture">
-            <el-upload
-              action="/product/upload"
-              list-type="picture-card"
-              :on-success="handleUploadSuccess"
-              :on-remove="handleRemove"
-              :file-list="fileList"
-              :disabled="disabled"
-              :before-upload="beforeUpload"
-            >
-              <el-icon><Plus /></el-icon>
+          <el-upload
+            ref="upload"
+            :action="uploadUrl"
+            :limit="1"
+            :beforeUpload="beforeUpload"
+            :auto-upload="false"
+            v-model:file-list="fileList"
+            :on-exceed="handleExceed"
+            @change="handleFileChange"
+          >
+            <!-- 触发选择文件按钮 -->
+            <template #trigger>
+              <el-button type="primary" style="margin-right: 35px;">选择文件</el-button>
+            </template>
 
-            </el-upload>
-
-            <!-- 图片预览弹框 -->
-            <el-dialog :visible.sync="dialogVisible" size="tiny">
-              <img alt="image" width="100%" :src="dialogImageUrl" />
-            </el-dialog>
-
-            <!-- 修改图片按钮 -->
-            <el-button @click="handleModifyImage">修改图片</el-button>
-            </el-form-item>
+            <!-- 上传按钮 -->
+            <el-button class="ml-3" type="success" @click="submitUpload">
+              上传
+            </el-button>
+          </el-upload>
+        </el-form-item>
         </el-form>
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="closeDialog">取消</el-button>
+        <el-button @click="closeAddDialog">取消</el-button>
         <el-button type="primary" @click="addproduct">
+            确定
+        </el-button>
+      </div>
+    </template>
+  </el-dialog>
+  <el-dialog
+    title="修改菜品"
+    v-model="modifyDialogVisible"
+    width="750px"
+    @close="closeModifyDialog"
+  >
+      <el-form
+       ref="productFromRef"
+       style="width: 500px;"
+       :model="productFrom"
+       :rules="productFromRules"
+       label-width="200px"
+       status-icon
+      >
+        <el-form-item label="名称" prop="name">
+          <el-input v-model="productFrom.name" />
+        </el-form-item>
+        <el-form-item label="定价" prop="price">
+          <el-input v-model="productFrom.price" />
+        </el-form-item>
+        <el-form-item label="会员价" prop="VipPrice">
+          <el-input  v-model="productFrom.VipPrice" />
+        </el-form-item>
+        <el-form-item label="菜系" prop="sort">
+          <el-input  v-model="productFrom.sort" />
+        </el-form-item>
+        <el-form-item label="描述" prop="introduce">
+          <el-input
+            v-model="textarea"
+            maxlength="30"
+            style="width: 240px"
+            placeholder="请输入描述"
+            show-word-limit
+            type="textarea"
+          />
+        </el-form-item>
+        <el-form-item label="图片" prop="picture">
+          <el-upload
+            ref="upload"
+            :action="uploadUrl"
+            :limit="1"
+            :beforeUpload="beforeUpload"
+            :auto-upload="false"
+            v-model:file-list="fileList"
+            :on-exceed="handleExceed"
+            @change="handleFileChange"
+          >
+            <!-- 触发选择文件按钮 -->
+            <template #trigger>
+              <el-button type="primary" style="margin-right: 35px;">选择文件</el-button>
+            </template>
+
+            <!-- 上传按钮 -->
+            <el-button class="ml-3" type="success" @click="submitUpload">
+              上传
+            </el-button>
+          </el-upload>
+        </el-form-item>
+        </el-form>
+
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="closeModifyDialog">取消</el-button>
+        <el-button type="primary" @click="modifyProduct">
             确定
         </el-button>
       </div>
@@ -143,8 +212,8 @@
 </template>
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'; // 导入 Vue 的功能
-import { ArrowRight, Search, Delete, Edit, Download, Plus, ZoomIn} from '@element-plus/icons-vue'; // 导入图标
-import { ElMessage, UploadFile } from 'element-plus'; // 导入 ElMessage
+import { ArrowRight, Search, Delete, Edit} from '@element-plus/icons-vue'; // 导入图标
+import { ElMessage } from 'element-plus'; // 导入 ElMessage
 import axios from 'axios'; // 导入 axios
 
 // 使用 ref 来定义响应式数据
@@ -160,25 +229,28 @@ const productList = ref([]); // 定义用户列表
 const total = ref(0);
 // 添加用户对话框是否可见
 const addDialogVisible = ref(false);
-const addFormRef = ref(null);
-const openDialog = () => {
+const productFromRef = ref(null);
+const openAddDialog = () => {
   console.log('打开');
   addDialogVisible.value = true;
   console.log(addDialogVisible.value);
 };
-const closeDialog = () => {
-  addFormRef.value.resetFields();
+const closeAddDialog = () => {
+  productFromRef.value.resetFields();
   addDialogVisible.value = false;
 };
-//用户表单
-const addForm = ref({
+//添加用户表单
+const productFrom = ref({
   picture:'',
   name: '',
   introduce: '',
   price: '',
-  vip_price: '',
-  is_deleted: 0,
+  VipPrice: '',
+  isDeleted: 0,
   sort: '',
+});
+const uploadForm = ref({
+  picture: ''
 });
 const textarea = ref('');
 const validateproductName = async (rule, value, callback)=> {
@@ -203,17 +275,17 @@ const validateproductName = async (rule, value, callback)=> {
 // 检查用户名是否存在
 const checkproductNameExists = async (name: string): Promise<boolean> => {
   console.log(name);
-  const { data: res } = await axios.post("product/list/1/9999", { name : addForm.value.name });
+  const { data: res } = await axios.post("product/list/1/9999", { name : productFrom.value.name });
   // 检查 records 是否存在且有元素
   if (res.data.records && res.data.records.length > 0) {
-    return res.data.records[0].name === addForm.value.name;
+    return res.data.records[0].name === productFrom.value.name;
   } else {
     // 如果没有找到用户，返回 false
     return false;
   }
 };
 //规则不能是函数。
-const addFormRules = ref({
+const productFromRules = ref({
   name: [
     { required: true, message: '请输入名称', trigger: 'blur' },
     { validator: validateproductName, trigger: 'blur' }
@@ -221,7 +293,7 @@ const addFormRules = ref({
   price: [
     { required: true, message: '请输入定价', trigger: 'blur' }
   ],
-  vip_price: [
+  VipPrice: [
     { required: true, message: '请输入会员价', trigger: 'blur' },
   ],
   sort: [
@@ -232,11 +304,12 @@ const addFormRules = ref({
 const addproduct = async () => {
   try {
     // 校验表单
-    await addFormRef.value.validate();
+    await productFromRef.value.validate();
 
     // 创建一个新的表单数据对象
     const formData = {
-      ...addForm.value,
+      ...productFrom.value,
+      introduce: textarea.value,  // 合并描述信息
       picture: uploadForm.value.picture,  // 合并图片信息
     };
 
@@ -245,19 +318,22 @@ const addproduct = async () => {
     const { data: res } = await axios.post('/product/add-one-product', formData);
 
     // 根据返回的消息进行提示
-    if (res.message === "新增菜品成功！") {
-      ElMessage.success('添加用户成功！');
-      closeDialog();  // 关闭对话框
+    if (res.message === "新增产品成功！") {
+      ElMessage.success('添加菜品成功！');
+      closeAddDialog();  // 关闭对话框
       getproductList();  // 更新用户列表
     } else {
-      ElMessage.error('添加用户失败！');
+      ElMessage.error('添加菜品失败！');
     }
   } catch (error) {
     console.error(error);
-    ElMessage.error('添加用户失败！');
+    ElMessage.error('添加菜品失败！');
+  }finally{
+    productFromRef.value.resetFields();
+    getproductList();
   }
 };
-
+//修改列表
 const getproductList = async () => {
   // 定义获取用户列表的方法
   const queryParam = {
@@ -307,6 +383,7 @@ const productChange = async (row) => {
 };
 //删除用户提示
 import { ElMessageBox } from 'element-plus'
+import { c } from 'vite/dist/node/types.d-aGj9QkWt';
 
 const remove = (productId) => {
   ElMessageBox.confirm(
@@ -352,56 +429,73 @@ const remove = (productId) => {
       });
     });
 };
-
-//图片操作
-const fileList = ref([]) // 用于保存上传的文件列表
-const dialogImageUrl = ref('') // 用于保存预览图片的 URL
-const dialogVisible = ref(false) // 控制预览弹窗的显示
-const disabled = ref(false) // 是否禁用上传
-const oldImageUrl = ref('') // 用于保存原来的图片 URL（如果有）
-const uploadForm = ref({ file: '' }) // 假设这是你的表单数据
-
-
-// 图片选择变化时调用
-const handleFileChange = (event) => {
-  const file = event.target.files[0];  // 获取选中的文件
-  if (file) {
-    uploadForm.value.picture = file;  // 将文件存储在 uploadForm 中
+const uploadUrl = '/product/upload';  // 上传的接口URL
+const upload= ref(null);  // 上传组件的引用
+const fileList = ref<any[]>([]);
+const beforeUpload = (file: File) => {
+  const maxSize = 1 * 1024 * 1024;  // 限制为 1MB
+  if (file.size > maxSize) {
+    ElMessage.error('上传文件大小不能超过 1MB!');
+    return false;  // 返回 false 阻止上传
   }
+  return true;  // 允许上传
 };
 
-// 图片上传
-const uploadFile = async () => {
-  // 判断是否选择了文件
-  if (!uploadForm.value.picture) {
-    ElMessage.error('请先选择一个文件');
+// 处理文件选择的变化
+const handleFileChange = (file: any, fileList: any[]) => {
+  console.log('文件变化:',fileList[0].name);
+  fileList.value = [fileList[0]];
+};
+const handleExceed = (files: File[]) => {
+  ElMessage.warning(`只能上传一个文件，当前选择了 ${files.length} 个文件`);
+};
+// 提交上传的方法
+const submitUpload = async (): Promise<void> => {
+  // 获取 el-upload 实例
+  const uploadInstance = upload as any;
+
+  if (!uploadInstance) {
+    ElMessage.error('上传组件未找到');
     return;
   }
 
+  // 获取当前上传的文件
+  const file = fileList.value[0].raw;
+  console.log('上传文件:', file);
+  if (!file) {
+    ElMessage.error('请先选择文件');
+    return;
+  }
+
+  // 创建 FormData 对象
   const formData = new FormData();
-  formData.append('file', uploadForm.value.picture);  // 将文件附加到 form-data
-  console.log(formData)
+  formData.append('file', file);  // 使用 .raw 来获取原始的文件对象
+
 
   try {
     // 使用 axios 发送文件上传请求
-    const response = await axios.post('/product/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data', // 确保上传时是 multipart 格式
-      },
-    });
+    const response = await axios.post(uploadUrl, formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    );
 
     // 上传成功处理
-    if (response.data.success) {
+    if (response.data.message === '上传成功') {
       ElMessage.success('文件上传成功');
-      console.log('上传成功：', response.data);
+      uploadForm.value.picture = response.data.data;
     } else {
       ElMessage.error('上传失败');
     }
   } catch (error) {
-    console.error('上传错误：', error);
     ElMessage.error('文件上传失败');
+    console.error('上传错误:', error);
   }
 };
+
+
 // 在组件挂载时调用 getproductList
 onMounted(() => {
   getproductList();

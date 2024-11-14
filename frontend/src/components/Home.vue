@@ -53,10 +53,6 @@
                 <el-icon><OfficeBuilding /></el-icon>
                   台号管理
               </el-menu-item>
-             <el-menu-item index="/category" >
-                <el-icon><Files /></el-icon>
-                  菜系管理
-              </el-menu-item>
               <el-menu-item index="/dish" >
                 <el-icon><Dish /></el-icon>
                   菜品管理
