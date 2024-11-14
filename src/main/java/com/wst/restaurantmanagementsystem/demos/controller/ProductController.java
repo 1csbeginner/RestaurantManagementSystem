@@ -91,7 +91,7 @@ public class ProductController {
         String sort = product.getSort();
         if (!StringUtils.isEmpty(sort)){
             wrapper.like("sort",sort);
-        }//123
+        }//1234
         wrapper.eq("is_deleted","0");
         wrapper.orderByDesc("gmt_modified");
 
