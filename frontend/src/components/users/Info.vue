@@ -51,9 +51,9 @@ const queryInfo = ref({
 });
 const modifyForm = ref({
   id: Number(sessionStorage.getItem('id')),
-  name: sessionStorage.getItem('name'),
-  password: sessionStorage.getItem('password'),
-  confirmPassword: sessionStorage.getItem('password'),
+  name: '',
+  password: '',
+  confirmPassword: ''
 });
 const modifyFormRef = ref(null); // 表单引用
 
@@ -113,10 +113,17 @@ const modifyUser = async () => {
     // 校验表单
     await modifyFormRef.value.validate();
 
-    const formData = { ...modifyForm.value };
+    let formData = { ...modifyForm.value };
 
     // 删除 confirmPassword 字段，避免传递到后台
     delete formData.confirmPassword;
+
+    // 删除值为空字符串的字段
+    Object.keys(formData).forEach(key => {
+      if (formData[key] === '') {
+        delete formData[key];
+      }
+    });
 
     // 获取用户 ID
     formData.id = Number(sessionStorage.getItem('id'));
@@ -145,11 +152,11 @@ const modifyUser = async () => {
 const reset = () => {
   modifyForm.value = {
     id: Number(sessionStorage.getItem('id')),
-    name: sessionStorage.getItem('name'),
-    password: sessionStorage.getItem('password'),
-    confirmPassword: sessionStorage.getItem('password'),
+    name: '',
+    password: '',
+    confirmPassword: '',
   };
-  router.push('/home');
+  router.push('/users');
 };
 </script>
 
