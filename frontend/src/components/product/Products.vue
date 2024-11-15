@@ -15,17 +15,17 @@
         <el-input placeholder="请输入名称搜索"
           v-model="queryInfo.query"
           clearable
-          @clear="getproductList"
+          @clear="defaultGetproductList"
         >
           <template #prepend>
-            <el-select v-model="Select" placeholder="选择" style="width: 80px">
-              <el-option label="菜品" value="1" />
-              <el-option label="菜系" value="2" />
-              <el-option label="id" value="3" />
+            <el-select v-model="searchType" placeholder="选择" style="width: 80px">
+              <el-option label="菜品" value="name" />
+              <el-option label="菜系" value="sort" />
+              <el-option label="id" value="id" />
             </el-select>
           </template>
           <template #append>
-            <el-button :icon="Search" @click="getproductList"/>
+            <el-button :icon="Search" @click="getProductList"/>
           </template>
         </el-input>
       </el-col>
@@ -220,6 +220,8 @@ import { ElMessage } from 'element-plus'; // 导入 ElMessage
 import axios from 'axios'; // 导入 axios
 
 // 使用 ref 来定义响应式数据
+//默认搜索方式
+const searchType = ref('name');
 const Select = ref(null);
 const queryInfo = ref({
   query: '',
@@ -258,13 +260,13 @@ const isSelect = ref(false);
 //一页多少条
 const handleSizeChange = (newSize) => {
   queryInfo.value.pagesize = newSize;
-  getproductList();
+  getProductList();
 };
 const currentName = ref(sessionStorage.getItem("name"));
 //当前页
 const handleCurrentChange = (newPage) => {
   queryInfo.value.pagenum = newPage;
-  getproductList();
+  getProductList();
 };
 // 添加用户对话框是否可见
 const addDialogVisible = ref(false);
@@ -337,7 +339,7 @@ const validateproductName = async (rule, value, callback)=> {
   }
 
   try {
-    // 调用 getproductList 函数来检查是否有相同用户名
+    // 调用 getProductList 函数来检查是否有相同用户名
     const exists = await checkproductNameExists(value);
     if (exists) {
       callback(new Error('菜品已存在'));
@@ -422,7 +424,7 @@ const addproduct = async () => {
       isUpload.value = false;
       productFormRef.value.resetFields();
       closeAddDialog();  // 关闭对话框
-      getproductList();  // 更新用户列表
+      getProductList();  // 更新用户列表
     } else {
       ElMessage.error('添加菜品失败！');
     }
@@ -430,15 +432,56 @@ const addproduct = async () => {
     console.error(error);
     ElMessage.error('添加菜品失败！');
   }finally{
-    getproductList();
+    getProductList();
   }
 };
-//获取列表
-const getproductList = async () => {
+//默认获取列表
+const defaultGetproductList = () => {
+  queryInfo.value.query = '';
+  searchType.value = 'name';
+  getProductList();
+};
+//id方式
+const getProductById = async () => {
+  try {
+
+    // 发起 GET 请求，根据 ID 查询用户
+    const { data: res } = await axios.get(`/product/get-one-product/${queryInfo.value.query}`);
+
+    if (res.data) {
+      const product = res.data;
+      console.log(product);
+
+      // 过滤已删除的用户
+      if (product.isDeleted !== 1) {
+        productList.value = [product];  // 将单个用户对象放入数组
+        console.log(productList.value);
+      } else {
+        productList.value = [];  // 如果该用户已被删除，则清空列表
+      }
+    }else {
+    // 如果没有用户数据，清空列表并提示用户
+    productList.value = [];
+    total.value = 0;
+    ElMessage.warning('未找到匹配的用户');
+  }
+
+  } catch (error) {
+    ElMessage.error('用户不存在');
+  }
+};
+const getProductByName = async () => {
   // 定义获取用户列表的方法
-  const queryParam = {
-    name: queryInfo.value.query  // 将查询条件直接作为用户名字段传递
-  };
+  let queryParam = {};
+  if(searchType.value === 'name'){
+     queryParam = {
+      name: queryInfo.value.query  // 将查询条件直接作为用户名字段传递
+    };
+  }else{
+    queryParam = {
+      sort: queryInfo.value.query  // 将查询条件直接作为用户名字段传递
+    };
+  }
 
   try {
     const { data: res } = await axios.post(`/product/list/${queryInfo.value.pagenum}/${queryInfo.value.pagesize}`, queryParam);
@@ -450,6 +493,14 @@ const getproductList = async () => {
 
   } catch (error) {
     console.error('获取产品列表失败', error);
+  }
+};
+//获取用户列表
+const getProductList = async()=>{
+  if(searchType.value === 'id'){
+    await getProductById();
+  }else{
+    await getProductByName();
   }
 };
 
@@ -487,7 +538,7 @@ const modifyProduct = async (row) => {
       idForm.value.id = '';
       textarea.value = '';
       closeModifyDialog();  // 关闭对话框
-      getproductList();  // 更新用户列表
+      getProductList();  // 更新用户列表
     } else {
       ElMessage.error('修改失败！');
     }
@@ -495,12 +546,13 @@ const modifyProduct = async (row) => {
     console.error(error);
     ElMessage.error('修改失败！');
   }finally{
-    getproductList();
+    getProductList();
   }
 };;
 //删除用户提示
 import { ElMessageBox } from 'element-plus'
 import { id } from 'element-plus/es/locale';
+import { c } from 'vite/dist/node/types.d-aGj9QkWt';
 
 const remove = (productId) => {
   ElMessageBox.confirm(
@@ -527,7 +579,7 @@ const remove = (productId) => {
                 type: 'success',
                 message: '删除成功',
               });
-              getproductList();  // 重新获取产品列表
+              getProductList();  // 重新获取产品列表
             } else {
               // 删除失败
               ElMessage.error('删除失败');
@@ -615,9 +667,9 @@ const submitUpload = async (): Promise<void> => {
 };
 
 
-// 在组件挂载时调用 getproductList
+// 在组件挂载时调用 getProductList
 onMounted(() => {
-  getproductList();
+  getProductList();
 });
 </script>
 <style lang="less" scoped></style>
