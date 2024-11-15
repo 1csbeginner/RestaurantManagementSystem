@@ -42,7 +42,6 @@ import { ref, onMounted } from 'vue'; // 导入 Vue 的功能
 import { ArrowRight } from '@element-plus/icons-vue'; // 导入图标
 import { ElMessage } from 'element-plus'; // 导入 ElMessage
 import axios from 'axios'; // 导入 axios
-import { s } from 'vite/dist/node/types.d-aGj9QkWt';
 import router from '@/router';
 
 // 使用 ref 来定义响应式数据
@@ -51,21 +50,23 @@ const queryInfo = ref({
 });
 const modifyForm = ref({
   id: Number(sessionStorage.getItem('id')),
-  name: '',
-  password: '',
-  confirmPassword: ''
+  name: sessionStorage.getItem('name'),
+  password: sessionStorage.getItem('password'),
+  confirmPassword: sessionStorage.getItem('password'),
 });
 const modifyFormRef = ref(null); // 表单引用
 
 // 检查用户名是否存在
 const checkUserNameExists = async (name: string): Promise<boolean> => {
   const { data: res } = await axios.post('user/list/1/9999', { name });
-  return res.data.records.length != 0 && res.data.records[0].name === name;
+  console.log(res.data.records.length != 0 && res.data.records[0].id === Number(sessionStorage.getItem('id')));
+  // 如果用户名存在且不是当前用户的用户名，则返回 true
+  return res.data.records.length != 0 && res.data.records[0].id !== Number(sessionStorage.getItem('id'));
 };
 
 // 用户名验证
 const validateUserName = async (rule: any, value: string, callback: Function) => {
-  if (value && !value.trim() || value === modifyForm.value.name) {  // 如果用户名为空，跳过验证
+  if (value && !value.trim()) {  // 如果用户名为空，跳过验证
     callback();
     return;
   }
@@ -95,7 +96,7 @@ const confirmPasswordValidator = (rule: any, value: string, callback: Function) 
 // 表单验证规则
 const modifyFormRules = ref({
   name: [
-    { required: false, message: '请输入用户名', trigger: 'blur' },
+    { required: true, message: '请输入用户名', trigger: 'blur' },
     { validator: validateUserName, trigger: 'blur' },
   ],
   password: [
@@ -152,9 +153,9 @@ const modifyUser = async () => {
 const reset = () => {
   modifyForm.value = {
     id: Number(sessionStorage.getItem('id')),
-    name: '',
-    password: '',
-    confirmPassword: '',
+    name: sessionStorage.getItem('name'),
+    password: sessionStorage.getItem('password'),
+    confirmPassword: sessionStorage.getItem('password'),
   };
   router.push('/users');
 };

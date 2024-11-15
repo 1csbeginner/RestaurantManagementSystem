@@ -95,7 +95,7 @@
           <el-input  v-model="productForm.vipPrice" />
         </el-form-item>
         <el-form-item label="菜系" prop="sort">
-          <el-input  v-model="productForm.sort" />
+          <el-input  v-model="productForm.sort" placeholder="例：荤菜（单菜系），素菜-汤-xxxx（多菜系）" />
         </el-form-item>
         <el-form-item label="描述" prop="introduce">
           <el-input
@@ -141,6 +141,7 @@
       </div>
     </template>
   </el-dialog>
+  <!--修改-->
   <el-dialog
     title="修改菜品"
     v-model="modifyDialogVisible"
@@ -151,7 +152,7 @@
        ref="productFormRef"
        style="width: 500px;"
        :model="productForm"
-       :rules="productFormRules"
+       :rules="modifyFormRules"
        label-width="200px"
        status-icon
       >
@@ -165,7 +166,7 @@
           <el-input  v-model="productForm.vipPrice" />
         </el-form-item>
         <el-form-item label="菜系" prop="sort">
-          <el-input  v-model="productForm.sort" />
+          <el-input  v-model="productForm.sort" placeholder="例：荤菜（单菜系），素菜-汤-xxxx（多菜系）" />
         </el-form-item>
         <el-form-item label="描述" prop="introduce">
           <el-input
@@ -184,6 +185,7 @@
             :limit="1"
             :beforeUpload="beforeUpload"
             :auto-upload="false"
+            style="width: 300px;"
             v-model:file-list="fileList"
             :on-exceed="handleExceed"
             @change="handleFileChange"
@@ -228,34 +230,13 @@ const queryInfo = ref({
 });
 const productList = ref([]); // 定义用户列表
 const total = ref(0);
-// 添加用户对话框是否可见
-const addDialogVisible = ref(false);
-const productFormRef = ref(null);
-const openAddDialog = () => {
-  console.log('打开');
-  addDialogVisible.value = true;
-  console.log(addDialogVisible.value);
-};
-const closeAddDialog = () => {
-  productFormRef.value.resetFields();
-  addDialogVisible.value = false;
-};
-const modifyDialogVisible = ref(false);
-const openModifyDialog = async (id) => {
-  modifyDialogVisible.value = true;
-  const { data: res } = await axios.get(`/product/get-one-product/${ id }`);
-  if(res.message==='查询成功'){
-    productForm.value = res.data;
-    textarea.value = res.data.introduce;
-    fileList.value = [{ name: res.data.picture }];
+//用户表单
+//id用于修改菜品功能
+const idForm = ref(
+  {
+    id: ''
   }
-  console.log(modifyDialogVisible.value);
-};
-const closeModifyDialog = () => {
-  productFormRef.value.resetFields();
-  modifyDialogVisible.value = false;
-};
-//添加用户表单
+);
 const productForm = ref({
   picture:'',
   name: '',
@@ -269,6 +250,86 @@ const uploadForm = ref({
   picture: ''
 });
 const textarea = ref('');
+//是否选择了图片
+const isUpload= ref(false);
+//是否提交了图片
+const isSelect = ref(false);
+//页面信息
+//一页多少条
+const handleSizeChange = (newSize) => {
+  queryInfo.value.pagesize = newSize;
+  getproductList();
+};
+const currentName = ref(sessionStorage.getItem("name"));
+//当前页
+const handleCurrentChange = (newPage) => {
+  queryInfo.value.pagenum = newPage;
+  getproductList();
+};
+// 添加用户对话框是否可见
+const addDialogVisible = ref(false);
+const productFormRef = ref(null);
+const openAddDialog = () => {
+  isUpload.value = false;
+  console.log('打开');
+  addDialogVisible.value = true;
+  console.log(addDialogVisible.value);
+};
+const closeAddDialog = () => {
+  productForm.value = {
+    picture:'',
+    name: '',
+    introduce: '',
+    price: '',
+    vipPrice: '',
+    isDeleted: 0,
+    sort: '',
+  },
+  idForm.value.id = '';
+  textarea.value = '';
+  uploadForm.value.picture = '';
+  fileList.value = [];
+  addDialogVisible.value = false;
+};
+//对话框
+const modifyDialogVisible = ref(false);
+const openModifyDialog = async (id) => {
+  console.log(id);
+  const { data: res } = await axios.get(`/product/get-one-product/${id}`);
+  if(res.message === '查询成功'){
+    productForm.value = res.data;
+    textarea.value = res.data.introduce;
+    uploadForm.value.picture = res.data.picture;
+
+    if (res.data.picture) {
+      fileList.value = [{ name: res.data.picture }];
+    } else {
+      fileList.value = [];  // 如果没有图片，清空fileList
+    }
+
+    modifyDialogVisible.value = true;
+    idForm.value.id = id;
+  }else{
+    ElMessage.error('获取产品失败！');
+  }
+};
+const closeModifyDialog = () => {
+  productForm.value = {
+    picture:'',
+    name: '',
+    introduce: '',
+    price: '',
+    vipPrice: '',
+    isDeleted: 0,
+    sort: '',
+  },
+  idForm.value.id = '';
+  textarea.value = '';
+  uploadForm.value.picture = '';
+  fileList.value = [];
+  modifyDialogVisible.value = false;
+};
+//验证部分
 const validateproductName = async (rule, value, callback)=> {
   if (!value) {
     callback(new Error('请输入名称'));
@@ -288,20 +349,36 @@ const validateproductName = async (rule, value, callback)=> {
     callback(new Error('检查名称时出错'));
   }
 };
-// 检查用户名是否存在
+// 检查菜品是否存在
 const checkproductNameExists = async (name: string): Promise<boolean> => {
   console.log(name);
   const { data: res } = await axios.post("product/list/1/9999", { name : productForm.value.name });
   // 检查 records 是否存在且有元素
   if (res.data.records && res.data.records.length > 0) {
-    return res.data.records[0].name === productForm.value.name;
+    return res.data.records[0].name === productForm.value.name && res.data.records[0].id !== idForm.value.id;
   } else {
     // 如果没有找到用户，返回 false
     return false;
   }
 };
-//规则不能是函数。
+//添加菜品规则
 const productFormRules = ref({
+  name: [
+    { required: true, message: '请输入名称', trigger: 'blur' },
+    { validator: validateproductName, trigger: 'blur' }
+  ],
+  price: [
+    { required: true, message: '请输入定价', trigger: 'blur' }
+  ],
+  vipPrice: [
+    { required: true, message: '请输入会员价', trigger: 'blur' },
+  ],
+  sort: [
+    { required: true, message: '请选择菜系', trigger: 'blur' }
+  ]
+});
+//修改规则
+const modifyFormRules = ref({
   name: [
     { required: true, message: '请输入名称', trigger: 'blur' },
     { validator: validateproductName, trigger: 'blur' }
@@ -321,7 +398,11 @@ const addproduct = async () => {
   try {
     // 校验表单
     await productFormRef.value.validate();
-
+    // 判断是否提交了图片
+    if(isSelect.value && !isUpload.value){
+      ElMessage.error('有图片未提交！请提交图片！');
+      return;
+    }
     // 创建一个新的表单数据对象
     const formData = {
       ...productForm.value,
@@ -336,6 +417,10 @@ const addproduct = async () => {
     // 根据返回的消息进行提示
     if (res.message === "新增产品成功！") {
       ElMessage.success('添加菜品成功！');
+      //清空
+      isSelect.value = false;
+      isUpload.value = false;
+      productFormRef.value.resetFields();
       closeAddDialog();  // 关闭对话框
       getproductList();  // 更新用户列表
     } else {
@@ -345,11 +430,10 @@ const addproduct = async () => {
     console.error(error);
     ElMessage.error('添加菜品失败！');
   }finally{
-    productFormRef.value.resetFields();
     getproductList();
   }
 };
-//修改列表
+//获取列表
 const getproductList = async () => {
   // 定义获取用户列表的方法
   const queryParam = {
@@ -369,35 +453,54 @@ const getproductList = async () => {
   }
 };
 
-
-//一页多少条
-const handleSizeChange = (newSize) => {
-  queryInfo.value.pagesize = newSize;
-  getproductList();
-};
-const currentName = ref(sessionStorage.getItem("name"));
-//当前页
-const handleCurrentChange = (newPage) => {
-  queryInfo.value.pagenum = newPage;
-  getproductList();
-};
 //修改用户信息
-const productChange = async (row) => {
-  const changeParams = {
-    id: row.id,
-    isManager: row.isManager ? 1 : 0
-  };
-  console.log(changeParams);
-  const response = await axios.post('/product/upd-one-product', changeParams);
-  if(response.data.message === "修改用户信息成功！"){
-    ElMessage.success('修改用户信息成功！');
-  }else{
-    row.isManager = !row.isManager;
-    ElMessage.error('修改用户信息失败！');
+const modifyProduct = async (row) => {
+  try {
+    // 校验表单
+    await productFormRef.value.validate();
+    // 判断是否提交了图片
+    if(isSelect.value && !isUpload.value){
+      console.log(isUpload.value);
+      ElMessage.error('有图片未提交！请提交图片！');
+      return;
+    }
+
+    // 创建一个新的表单数据对象
+    const formData = {
+      ...productForm.value,
+      id: idForm.value.id,
+      introduce: textarea.value,  // 合并描述信息
+      picture: uploadForm.value.picture,  // 合并图片信息
+    };
+
+
+    // 发送请求到后端
+    const { data: res } = await axios.post('/product/upd-one-product', formData);
+
+    // 根据返回的消息进行提示
+    if (res.message === "修改产品信息成功！") {
+      ElMessage.success('修改成功！');
+      isSelect.value = false;
+      isUpload.value = false;
+      fileList.value = [];
+      productFormRef.value.resetFields();
+      idForm.value.id = '';
+      textarea.value = '';
+      closeModifyDialog();  // 关闭对话框
+      getproductList();  // 更新用户列表
+    } else {
+      ElMessage.error('修改失败！');
+    }
+  } catch (error) {
+    console.error(error);
+    ElMessage.error('修改失败！');
+  }finally{
+    getproductList();
   }
-};
+};;
 //删除用户提示
 import { ElMessageBox } from 'element-plus'
+import { id } from 'element-plus/es/locale';
 
 const remove = (productId) => {
   ElMessageBox.confirm(
@@ -458,6 +561,7 @@ const beforeUpload = (file: File) => {
 // 处理文件选择的变化
 const handleFileChange = (file: any, fileList: any[]) => {
   console.log('文件变化:',fileList[0].name);
+  isSelect.value = true;
   fileList.value = [fileList[0]];
 };
 const handleExceed = (files: File[]) => {
@@ -499,6 +603,7 @@ const submitUpload = async (): Promise<void> => {
     // 上传成功处理
     if (response.data.message === '上传成功') {
       ElMessage.success('文件上传成功');
+      isUpload.value = true;
       uploadForm.value.picture = response.data.data;
     } else {
       ElMessage.error('上传失败');
