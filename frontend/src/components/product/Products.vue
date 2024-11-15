@@ -4,7 +4,7 @@
   <el-breadcrumb :separator-icon="ArrowRight">
     <el-breadcrumb-item :to="{ path: '/home' }">首页</el-breadcrumb-item>
     <el-breadcrumb-item>后台服务</el-breadcrumb-item>
-    <el-breadcrumb-item>菜系管理</el-breadcrumb-item>
+    <el-breadcrumb-item>菜品管理</el-breadcrumb-item>
   </el-breadcrumb>
   <!--卡片视图-->
   <el-card >
@@ -51,11 +51,11 @@
       <el-table-column prop="name" label="名称"></el-table-column>
       <el-table-column prop="introduce" label="描述"></el-table-column>
       <el-table-column prop="price" label="价格"></el-table-column>
-      <el-table-column prop="vip_price" label="会员价"></el-table-column>
+      <el-table-column prop="vipPrice" label="会员价"></el-table-column>
       <el-table-column prop="sort" label="菜系"></el-table-column>
       <el-table-column label="操作">
         <template v-slot="scope">
-          <el-button type="primary" :icon="Edit"  @click="modify(scope.row.id)"/>
+          <el-button type="primary" :icon="Edit"  @click="openModifyDialog(scope.row.id)"/>
           <el-button type="danger" :icon="Delete" @click="remove(scope.row.id)"/>
         </template>
       </el-table-column>
@@ -78,24 +78,24 @@
     @close="closeAddDialog"
   >
       <el-form
-       ref="productFromRef"
+       ref="productFormRef"
        style="width: 500px;"
-       :model="productFrom"
-       :rules="productFromRules"
+       :model="productForm"
+       :rules="productFormRules"
        label-width="200px"
        status-icon
       >
         <el-form-item label="名称" prop="name">
-          <el-input v-model="productFrom.name" />
+          <el-input v-model="productForm.name" />
         </el-form-item>
         <el-form-item label="定价" prop="price">
-          <el-input v-model="productFrom.price" />
+          <el-input v-model="productForm.price" />
         </el-form-item>
-        <el-form-item label="会员价" prop="VipPrice">
-          <el-input  v-model="productFrom.VipPrice" />
+        <el-form-item label="会员价" prop="vipPrice">
+          <el-input  v-model="productForm.vipPrice" />
         </el-form-item>
         <el-form-item label="菜系" prop="sort">
-          <el-input  v-model="productFrom.sort" />
+          <el-input  v-model="productForm.sort" />
         </el-form-item>
         <el-form-item label="描述" prop="introduce">
           <el-input
@@ -117,6 +117,7 @@
             v-model:file-list="fileList"
             :on-exceed="handleExceed"
             @change="handleFileChange"
+            style="width: 300px;"
           >
             <!-- 触发选择文件按钮 -->
             <template #trigger>
@@ -147,24 +148,24 @@
     @close="closeModifyDialog"
   >
       <el-form
-       ref="productFromRef"
+       ref="productFormRef"
        style="width: 500px;"
-       :model="productFrom"
-       :rules="productFromRules"
+       :model="productForm"
+       :rules="productFormRules"
        label-width="200px"
        status-icon
       >
         <el-form-item label="名称" prop="name">
-          <el-input v-model="productFrom.name" />
+          <el-input v-model="productForm.name" />
         </el-form-item>
         <el-form-item label="定价" prop="price">
-          <el-input v-model="productFrom.price" />
+          <el-input v-model="productForm.price" />
         </el-form-item>
-        <el-form-item label="会员价" prop="VipPrice">
-          <el-input  v-model="productFrom.VipPrice" />
+        <el-form-item label="会员价" prop="vipPrice">
+          <el-input  v-model="productForm.vipPrice" />
         </el-form-item>
         <el-form-item label="菜系" prop="sort">
-          <el-input  v-model="productFrom.sort" />
+          <el-input  v-model="productForm.sort" />
         </el-form-item>
         <el-form-item label="描述" prop="introduce">
           <el-input
@@ -229,23 +230,38 @@ const productList = ref([]); // 定义用户列表
 const total = ref(0);
 // 添加用户对话框是否可见
 const addDialogVisible = ref(false);
-const productFromRef = ref(null);
+const productFormRef = ref(null);
 const openAddDialog = () => {
   console.log('打开');
   addDialogVisible.value = true;
   console.log(addDialogVisible.value);
 };
 const closeAddDialog = () => {
-  productFromRef.value.resetFields();
+  productFormRef.value.resetFields();
   addDialogVisible.value = false;
 };
+const modifyDialogVisible = ref(false);
+const openModifyDialog = async (id) => {
+  modifyDialogVisible.value = true;
+  const { data: res } = await axios.get(`/product/get-one-product/${ id }`);
+  if(res.message==='查询成功'){
+    productForm.value = res.data;
+    textarea.value = res.data.introduce;
+    fileList.value = [{ name: res.data.picture }];
+  }
+  console.log(modifyDialogVisible.value);
+};
+const closeModifyDialog = () => {
+  productFormRef.value.resetFields();
+  modifyDialogVisible.value = false;
+};
 //添加用户表单
-const productFrom = ref({
+const productForm = ref({
   picture:'',
   name: '',
   introduce: '',
   price: '',
-  VipPrice: '',
+  vipPrice: '',
   isDeleted: 0,
   sort: '',
 });
@@ -275,17 +291,17 @@ const validateproductName = async (rule, value, callback)=> {
 // 检查用户名是否存在
 const checkproductNameExists = async (name: string): Promise<boolean> => {
   console.log(name);
-  const { data: res } = await axios.post("product/list/1/9999", { name : productFrom.value.name });
+  const { data: res } = await axios.post("product/list/1/9999", { name : productForm.value.name });
   // 检查 records 是否存在且有元素
   if (res.data.records && res.data.records.length > 0) {
-    return res.data.records[0].name === productFrom.value.name;
+    return res.data.records[0].name === productForm.value.name;
   } else {
     // 如果没有找到用户，返回 false
     return false;
   }
 };
 //规则不能是函数。
-const productFromRules = ref({
+const productFormRules = ref({
   name: [
     { required: true, message: '请输入名称', trigger: 'blur' },
     { validator: validateproductName, trigger: 'blur' }
@@ -293,7 +309,7 @@ const productFromRules = ref({
   price: [
     { required: true, message: '请输入定价', trigger: 'blur' }
   ],
-  VipPrice: [
+  vipPrice: [
     { required: true, message: '请输入会员价', trigger: 'blur' },
   ],
   sort: [
@@ -304,11 +320,11 @@ const productFromRules = ref({
 const addproduct = async () => {
   try {
     // 校验表单
-    await productFromRef.value.validate();
+    await productFormRef.value.validate();
 
     // 创建一个新的表单数据对象
     const formData = {
-      ...productFrom.value,
+      ...productForm.value,
       introduce: textarea.value,  // 合并描述信息
       picture: uploadForm.value.picture,  // 合并图片信息
     };
@@ -329,7 +345,7 @@ const addproduct = async () => {
     console.error(error);
     ElMessage.error('添加菜品失败！');
   }finally{
-    productFromRef.value.resetFields();
+    productFormRef.value.resetFields();
     getproductList();
   }
 };
@@ -343,11 +359,10 @@ const getproductList = async () => {
   try {
     const { data: res } = await axios.post(`/product/list/${queryInfo.value.pagenum}/${queryInfo.value.pagesize}`, queryParam);
 
-    // 过滤掉 is_deleted 为 0 的产品
     const filteredProducts = res.data.records.filter(product => product.is_deleted !== 1);
 
     productList.value = filteredProducts;  // 将过滤后的产品列表数据赋值给 productList
-    total.value = filteredProducts.length; // 更新显示的总数
+    total.value = res.data.total;  // 将总记录数赋值给 total
 
   } catch (error) {
     console.error('获取产品列表失败', error);
@@ -383,7 +398,6 @@ const productChange = async (row) => {
 };
 //删除用户提示
 import { ElMessageBox } from 'element-plus'
-import { c } from 'vite/dist/node/types.d-aGj9QkWt';
 
 const remove = (productId) => {
   ElMessageBox.confirm(

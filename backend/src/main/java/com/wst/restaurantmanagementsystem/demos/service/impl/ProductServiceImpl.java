@@ -36,7 +36,7 @@ public class ProductServiceImpl implements ProductService {
         entity.setIntroduce(product.getIntroduce());
         entity.setSort(product.getSort());
         entity.setPrice(product.getPrice());
-        entity.setVipPrice(product.getPrice());
+        entity.setVipPrice(product.getVipPrice());
         entity.setIsDeleted(0);
         entity.setGmtCreate(TimeUtil.getTime());
         entity.setGmtModified(TimeUtil.getTime());
