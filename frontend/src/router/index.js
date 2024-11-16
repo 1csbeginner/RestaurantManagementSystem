@@ -6,6 +6,7 @@ import Users from '../components/users/Users.vue'
 import Info from '../components/users/Info.vue'
 import Dish from '../components/product/Products.vue'
 import Order from '../components/order/Order.vue'
+import Pay from '../components/order/Pay.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -20,7 +21,8 @@ const router = createRouter({
       {path : '/users', component: Users},
       {path : '/info', component: Info},
       {path : '/dish', component: Dish},
-      {path : '/order', component: Order}
+      {path : '/order', component: Order},
+      {path : '/pay', component: Pay}
       ]
     }
   ],

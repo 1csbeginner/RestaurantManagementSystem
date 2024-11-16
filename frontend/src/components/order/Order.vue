@@ -23,7 +23,13 @@
         </el-input>
       </el-col>
       <el-col :span="4">
-        <el-button type="primary" @click="openAddDialog">添加菜品</el-button>
+        <el-button
+        type="primary"
+        icon="ShoppingCart"
+        @click="openCart"
+        >
+        购物车 ({{ totalItems }})
+      </el-button>
       </el-col>
     </el-row>
     <!--用户列表-->
@@ -94,11 +100,40 @@
   </el-card>
   <!--添加-->
   <el-dialog
-    title="添加菜品"
-    v-model="addDialogVisible"
+    title="购物车"
+    v-model="CartVisible"
     width="750px"
-    @close="closeAddDialog"
+    @close="closeCart"
   >
+  <el-table
+    :data="Object.values(cart)"
+    style="width: 100%"
+    height="400"
+    border>
+    <el-table-column
+      prop="name"
+      label="商品名称"
+      width="180">
+    </el-table-column>
+    <el-table-column
+      prop="price"
+      label="价格"
+      width="180">
+    </el-table-column>
+    <el-table-column
+      label="数量"
+      prop="quantity"
+      width="180">
+      <template #default="{ row }">
+        <el-button @click="decreaseQuantity(row.id)" type="danger" size="mini">-</el-button>
+        <span class="quantity" style="padding-left:10px; padding-right: 10px;">{{ row.quantity }}</span>
+        <el-button @click="increaseQuantity(row.id)" type="success" size="mini">+</el-button>
+      </template>
+    </el-table-column>
+  </el-table>
+    <template #footer>
+        <el-button @click="router.push('/pay')" type="primary" v-if="Object.keys(cart).length > 0">结算</el-button>
+    </template>
   </el-dialog>
   <!--修改-->
   <el-dialog
@@ -145,10 +180,11 @@
 
 </template>
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue'; // 导入 Vue 的功能
+import { ref, onMounted, computed } from 'vue'; // 导入 Vue 的功能
 import { ArrowRight, Search, Delete, Edit} from '@element-plus/icons-vue'; // 导入图标
 import { ElMessage } from 'element-plus'; // 导入 ElMessage
 import axios from 'axios'; // 导入 axios
+import router from '@/router';
 
 // 使用 ref 来定义响应式数据
 //默认搜索方式
@@ -181,7 +217,17 @@ const uploadForm = ref({
   picture: ''
 });
 //购物车
-const cart = ref({});
+interface CartItem {
+  id: string;
+  quantity: number;
+  price: number;
+  name: string;
+}
+
+interface Cart {
+  [productId: string]: CartItem;
+}
+
 const textarea = ref('');
 //是否选择了图片
 const isUpload= ref(false);
@@ -221,8 +267,8 @@ const menuItems = ref([
     index: '主食',
   },
   {
-    label: '甜品',
-    index: '甜品',
+    label: '甜点',
+    index: '甜点',
   },
   {
     label: '汤',
@@ -241,7 +287,6 @@ const handleSearch = () => {
   applyFilters();
 };
 
-//TODO:把sort和keyword合并到queryInfo中
 const applyFilters = () => {
   queryInfo.value.query = searchQuery.value;
   queryInfo.value.sort = menuQuery.value;
@@ -249,27 +294,14 @@ const applyFilters = () => {
 };
 
 // 添加用户对话框是否可见
-const addDialogVisible = ref(false);
+const CartVisible = ref(false);
 const productFormRef = ref(null);
-const openAddDialog = () => {
-  console.log('打开');
-  addDialogVisible.value = true;
-  console.log(addDialogVisible.value);
+const openCart = () => {
+  CartVisible.value = true;
 };
-const closeAddDialog = () => {
-  productForm.value = {
-    id: '',
-    picture:'',
-    name: '',
-    introduce: '',
-    price: '',
-    vipPrice: '',
-    isDeleted: 0,
-    sort: '',
-  },
-  textarea.value = '';
-  uploadForm.value.picture = '';
-  addDialogVisible.value = false;
+const closeCart = () => {
+
+  CartVisible.value = false;
 };
 //对话框
 const modifyDialogVisible = ref(false);
@@ -336,25 +368,46 @@ const addproduct = async () => {
   }
 };
 //购物车
+const cart = ref<Cart>({});
+
+// 添加商品到购物车，初始数量为 1
 const addToCart = (productId: string) => {
-  // 添加到购物车，初始数量为 1
-  cart.value[productId] = { quantity: 1 };
+  const product = productList.value.find(p => p.id === productId);
+  if (product && !cart.value[productId]) {
+    cart.value[productId] = {
+      id: productId,
+      quantity: 1,
+      price: product.price,
+      name: product.name
+    };
+  }
 };
 
+// 增加商品数量
 const increaseQuantity = (productId: string) => {
-  // 增加商品数量
+  console.log(productId);
   if (cart.value[productId]) {
     cart.value[productId].quantity += 1;
   }
 };
 
+// 减少商品数量，若数量为 0 则移除商品
 const decreaseQuantity = (productId: string) => {
-  // 减少商品数量，若数量为 0 则移除商品
+  console.log(productId);
   if (cart.value[productId] && cart.value[productId].quantity > 1) {
     cart.value[productId].quantity -= 1;
   } else {
     delete cart.value[productId];
   }
+};
+//计算购物车中商品总数
+const totalItems = computed(() => {
+  return Object.values(cart.value).reduce((total, item) => total + item.quantity, 0);
+});
+// 跳转到购物车页面
+const goToCartPage = () => {
+  // 这里可以添加跳转到购物车页面的逻辑
+  console.log('跳转到购物车页面');
 };
 const getProductList = async () => {
   // 构造查询参数
@@ -427,6 +480,8 @@ const modifyProduct = async (row) => {
 onMounted(() => {
   getProductList();
 });
+
+
 </script>
 <style lang="less" scoped>
     .product-card {
