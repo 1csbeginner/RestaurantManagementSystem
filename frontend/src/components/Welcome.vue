@@ -6,6 +6,7 @@
 
 <script>
 
+
 export default {
   data() {
     return {
@@ -33,6 +34,7 @@ export default {
           this.name = res.data.name;
           this.isManager = res.data.isManager;
           this.isVip = res.data.isVip;
+          sessionStorage.setItem('isVip', this.isVip);
         } else {
           console.error('未找到相关用户信息');
         }

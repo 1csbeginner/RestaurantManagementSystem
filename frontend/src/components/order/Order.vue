@@ -19,9 +19,9 @@
       <el-button
         v-for="table in tableList"
         :key="table.id"
-        :disabled="table.isOccupied"
+        :disabled="table.isOccupied && table.user !== name"
         @click="selectTable(table)"
-        :type="table.isOccupied ? 'danger' : 'primary'"
+        :type="table.isOccupied ? 'success' : 'primary'"
       >
         {{ table.name }}
       </el-button>
@@ -163,10 +163,11 @@
     </el-table-column>
   </el-table>
     <template #footer>
+        <p>总价：¥{{ totalPrice }}</p>
         <el-button @click="pay" type="primary" v-if="Object.keys(cart).length > 0">结算</el-button>
     </template>
   </el-dialog>
-  <!--修改-->
+  <!--详情-->
   <el-dialog
   title="详情"
   v-model="modifyDialogVisible"
@@ -221,6 +222,7 @@ import { s } from 'vite/dist/node/types.d-aGj9QkWt';
 // 使用 ref 来定义响应式数据
 
 //默认搜索方式
+const name = ref(sessionStorage.getItem('name'));
 const menuQuery = ref('');
 const searchQuery = ref('');
 const queryInfo = ref({
@@ -263,10 +265,6 @@ interface Cart {
 }
 
 const textarea = ref('');
-//是否选择了图片
-const isUpload= ref(false);
-//是否提交了图片
-const isSelect = ref(false);
 //页面信息
 //一页多少条
 const handleSizeChange = (newSize) => {
@@ -373,8 +371,8 @@ const checkTableSelection = () => {
       // 如果找到匹配的桌号，设置桌号信息
       selectedTable.value = matchedTable.id;
       selectedTableName.value = matchedTable.name;
+      sessionStorage.setItem('table', selectedTable.value);
 
-      ElMessage.info(`当前桌号: ${matchedTable.name}`); // 提示当前桌号
       getProductList(); // 加载点菜页面
     } else {
       // 未找到匹配桌号，弹出选择桌号的对话框
@@ -385,35 +383,43 @@ const checkTableSelection = () => {
     tableDialogVisible.value = true;
   }
 };
-
+//选桌
 const selectTable = (table: { id: string; name: string; isOccupied: boolean; user: string | null }) => {
   if (table.isOccupied) {
     ElMessage.warning(`该桌号已被占用！占用者: ${table.user || '未知用户'}`);
     return;
   }
 
+  // 如果已有选中的桌号，先释放之前的桌号
+  if (selectedTable.value) {
+    const previousTable = tableList.value.find((t) => t.id === selectedTable.value);
+    if (previousTable) {
+      previousTable.isOccupied = false;
+      previousTable.user = null;
+    }
+  }
+
+  // 更新选中的桌号信息
   selectedTable.value = table.id;
   selectedTableName.value = table.name;
 
-  // 更新桌号状态
-  const username = sessionStorage.getItem('name'); // 当前用户
+  // 获取当前用户名
+  const username = sessionStorage.getItem('name');
   if (username) {
+    // 更新当前桌号状态
     table.isOccupied = true;
-    table.user = username; // 设置占座者用户名
+    table.user = username;
 
-    // 更新本地存储
-    const tableData = localStorage.getItem('tableList');
-    if (tableData) {
-      const tableList = JSON.parse(tableData) as Table[];
-      const selectedTable = tableList.find((t) => t.id === table.id);
-      if (selectedTable) {
-        selectedTable.isOccupied = true;
-        selectedTable.user = username;
-        localStorage.setItem('tableList', JSON.stringify(tableList));
-      }
-    }
+    // 更新响应式数据和本地存储
+    updateLocalStorage(); // 调用统一的同步方法
+
     ElMessage.success(`已选择桌号: ${table.name}`);
   }
+};
+// 更新本地存储的统一方法
+const updateLocalStorage = () => {
+  // 同步 `tableList` 到本地存储
+  localStorage.setItem('tableList', JSON.stringify(tableList.value));
 };
 
 // 确认桌号
@@ -433,7 +439,7 @@ const confirmTable = () => {
 
 const updateTableList = (id: string, isOccupied: boolean) => {
   const table = tableList.value.find((t) => t.id === id);
-  const username = sessionStorage.getItem('username'); // 获取当前用户名
+  const username = sessionStorage.getItem('name'); // 获取当前用户名
 
   if (table && username) {
     table.isOccupied = isOccupied;  // 更新占用状态
@@ -500,6 +506,7 @@ const addToCart = (productId: string) => {
       price: product.price,
       name: product.name
     };
+    saveCart();
   }
 };
 
@@ -509,6 +516,7 @@ const increaseQuantity = (productId: string) => {
   if (cart.value[productId]) {
     cart.value[productId].quantity += 1;
   }
+  saveCart();
 };
 
 // 减少商品数量，若数量为 0 则移除商品
@@ -519,17 +527,25 @@ const decreaseQuantity = (productId: string) => {
   } else {
     delete cart.value[productId];
   }
+  saveCart();
 };
 //计算购物车中商品总数
 const totalItems = computed(() => {
   return Object.values(cart.value).reduce((total, item) => total + item.quantity, 0);
 });
+
+const totalPrice = computed(() => {
+  return Object.values(cart.value).reduce((sum, item) => sum + item.price * item.quantity, 0);
+});
+const saveCart = () => {
+  sessionStorage.setItem('cartForm', JSON.stringify(cart.value));
+};
 // 跳转到购物车页面
 const pay = () => {
-  // 将购物车数据存入 sessionStorage
-  sessionStorage.setItem('cartForm', JSON.stringify(cart.value));
   // 跳转到购物车页面
-  router.push('/pay');
+  router.push('/pay').then(() => {
+    sessionStorage.setItem('activePath', '/pay');
+  });
 };
 
 const getProductList = async () => {
@@ -562,6 +578,10 @@ const getProductList = async () => {
 onMounted(() => {
   loadTableList();
   checkTableSelection();
+  const cartData = sessionStorage.getItem('cartForm');
+  if (cartData) {
+    cart.value = JSON.parse(cartData);
+  }
 });
 
 

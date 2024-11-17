@@ -55,8 +55,8 @@
       <el-table-column prop="sort" label="菜系"></el-table-column>
       <el-table-column label="操作">
         <template v-slot="scope">
-          <el-button type="primary" :icon="Edit"  @click="openModifyDialog(scope.row.id)"/>
-          <el-button type="danger" :icon="Delete" @click="remove(scope.row.id)"/>
+          <el-button type="primary" :icon="Edit"  :disabled="Object.values(cart).some(item => item.id === scope.row.id)" @click="openModifyDialog(scope.row.id)"/>
+          <el-button type="danger" :icon="Delete" :disabled="Object.values(cart).some(item => item.id === scope.row.id)" @click="remove(scope.row.id)"/>
         </template>
       </el-table-column>
     </el-table>
@@ -231,6 +231,8 @@ const queryInfo = ref({
   pagesize: 10
 });
 const productList = ref([]); // 定义用户列表
+//定义购物车(检查要删除的菜是否在购物车中)
+const cart = ref<Array<{ id: string; name: string; quantity: number; price: number }>>([]);
 const total = ref(0);
 //用户表单
 //id用于修改菜品功能
@@ -673,6 +675,10 @@ const submitUpload = async (): Promise<void> => {
 // 在组件挂载时调用 getProductList
 onMounted(() => {
   getProductList();
+  const cartData = sessionStorage.getItem('cartForm');
+  if(cartData) {
+    cart.value = JSON.parse(cartData);
+  }
 });
 </script>
 <style lang="less" scoped></style>
