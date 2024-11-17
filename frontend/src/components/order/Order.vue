@@ -5,10 +5,41 @@
     <el-breadcrumb-item>前台服务</el-breadcrumb-item>
     <el-breadcrumb-item>点菜</el-breadcrumb-item>
   </el-breadcrumb>
+  <!--先选桌！-->
+    <!-- 桌号选择对话框 -->
+      <el-dialog
+      title="请选择桌号"
+      v-model="tableDialogVisible"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      width="400px"
+      @close="handleClose"
+    >
+    <div class="table-selection">
+      <el-button
+        v-for="table in tableList"
+        :key="table.id"
+        :disabled="table.isOccupied"
+        @click="selectTable(table)"
+        :type="table.isOccupied ? 'danger' : 'primary'"
+      >
+        {{ table.name }}
+      </el-button>
+    </div>
+
+    <template #footer>
+      <el-button @click="confirmTable" type="primary" :disabled="!selectedTable">
+        确认
+      </el-button>
+    </template>
+  </el-dialog>
   <!--卡片视图-->
   <el-card >
 
     <el-row :gutter="20">
+      <el-col :span="7">
+        <span>桌号 : {{ selectedTableName }}</span>
+      </el-col>
       <el-col :span="7">
       <!--搜索-->
         <el-input placeholder="请输入名称搜索"
@@ -132,7 +163,7 @@
     </el-table-column>
   </el-table>
     <template #footer>
-        <el-button @click="router.push('/pay')" type="primary" v-if="Object.keys(cart).length > 0">结算</el-button>
+        <el-button @click="pay" type="primary" v-if="Object.keys(cart).length > 0">结算</el-button>
     </template>
   </el-dialog>
   <!--修改-->
@@ -185,8 +216,10 @@ import { ArrowRight, Search, Delete, Edit} from '@element-plus/icons-vue'; // �
 import { ElMessage } from 'element-plus'; // 导入 ElMessage
 import axios from 'axios'; // 导入 axios
 import router from '@/router';
+import { s } from 'vite/dist/node/types.d-aGj9QkWt';
 
 // 使用 ref 来定义响应式数据
+
 //默认搜索方式
 const menuQuery = ref('');
 const searchQuery = ref('');
@@ -218,6 +251,7 @@ const uploadForm = ref({
 });
 //购物车
 interface CartItem {
+  table: string;
   id: string;
   quantity: number;
   price: number;
@@ -292,15 +326,135 @@ const applyFilters = () => {
   queryInfo.value.sort = menuQuery.value;
   getProductList();
 };
+// 控制桌号选择对话框的显示
+const tableDialogVisible = ref(false);
 
+// 桌号列表
+const tableList = ref<Array<{ id: string; name: string; user:string | null; isOccupied: boolean }>>([]);
+
+// 已选桌号及其名称
+const selectedTable = ref<string | null>(null);
+const selectedTableName = ref<string | null>(null);
+
+// 加载桌号列表（本地存储或初始化）
+const loadTableList = () => {
+  const savedTableList = localStorage.getItem('tableList');
+  if (savedTableList) {
+    console.log('已有存档');
+    tableList.value = JSON.parse(savedTableList);
+  } else {
+    tableList.value = Array.from({ length: 20 }, (_, index) => ({
+      id: (index + 1).toString(),
+      name: `桌${index + 1}`,
+      user: null,
+      isOccupied: false, // 默认未占用
+    }));
+    saveTableListToLocal(); // 初始化后保存到本地
+  }
+};
+
+// 保存桌号列表到本地存储
+const saveTableListToLocal = () => {
+  localStorage.setItem('tableList', JSON.stringify(tableList.value));
+};
+
+// 检查是否已有桌号记录（本地存储）
+const checkTableSelection = () => {
+  const username = sessionStorage.getItem('name'); // 获取当前用户的用户名
+  const tableData = localStorage.getItem('tableList'); // 获取本地存储的桌号数据
+
+  if (username && tableData) {
+    const tableList = JSON.parse(tableData) as Array<{ id: string; name: string; isOccupied: boolean; user: string }>;
+
+    // 查找与当前用户名匹配的桌号
+    const matchedTable = tableList.find((table) => table.user === username);
+
+    if (matchedTable) {
+      // 如果找到匹配的桌号，设置桌号信息
+      selectedTable.value = matchedTable.id;
+      selectedTableName.value = matchedTable.name;
+
+      ElMessage.info(`当前桌号: ${matchedTable.name}`); // 提示当前桌号
+      getProductList(); // 加载点菜页面
+    } else {
+      // 未找到匹配桌号，弹出选择桌号的对话框
+      tableDialogVisible.value = true;
+    }
+  } else {
+    // 本地存储没有桌号信息，弹出选择桌号的对话框
+    tableDialogVisible.value = true;
+  }
+};
+
+const selectTable = (table: { id: string; name: string; isOccupied: boolean; user: string | null }) => {
+  if (table.isOccupied) {
+    ElMessage.warning(`该桌号已被占用！占用者: ${table.user || '未知用户'}`);
+    return;
+  }
+
+  selectedTable.value = table.id;
+  selectedTableName.value = table.name;
+
+  // 更新桌号状态
+  const username = sessionStorage.getItem('name'); // 当前用户
+  if (username) {
+    table.isOccupied = true;
+    table.user = username; // 设置占座者用户名
+
+    // 更新本地存储
+    const tableData = localStorage.getItem('tableList');
+    if (tableData) {
+      const tableList = JSON.parse(tableData) as Table[];
+      const selectedTable = tableList.find((t) => t.id === table.id);
+      if (selectedTable) {
+        selectedTable.isOccupied = true;
+        selectedTable.user = username;
+        localStorage.setItem('tableList', JSON.stringify(tableList));
+      }
+    }
+    ElMessage.success(`已选择桌号: ${table.name}`);
+  }
+};
+
+// 确认桌号
+const confirmTable = () => {
+  if (!selectedTable.value || !selectedTableName.value) {
+    ElMessage.warning('请先选择一个桌号！');
+    return;
+  }
+  tableDialogVisible.value = false;
+
+  // 标记已占用并保存到本地存储
+  updateTableList(selectedTable.value, true);
+
+  ElMessage.success(`已选择桌号: ${selectedTableName.value}`);
+  getProductList(); // 加载点菜页面
+};
+
+const updateTableList = (id: string, isOccupied: boolean) => {
+  const table = tableList.value.find((t) => t.id === id);
+  const username = sessionStorage.getItem('username'); // 获取当前用户名
+
+  if (table && username) {
+    table.isOccupied = isOccupied;  // 更新占用状态
+    table.user = isOccupied ? username : null;  // 如果占用状态为真，设置占用者；如果为假，则清空占用者
+
+    saveTableListToLocal();  // 保存更新后的桌号状态到本地存储
+  }
+};
+const handleClose = () => {
+  if(selectedTable.value){
+    updateTableList(selectedTable.value, false);
+  }else{
+    router.push('/home');
+  }
+};
 // 添加用户对话框是否可见
 const CartVisible = ref(false);
-const productFormRef = ref(null);
 const openCart = () => {
   CartVisible.value = true;
 };
 const closeCart = () => {
-
   CartVisible.value = false;
 };
 //对话框
@@ -332,41 +486,6 @@ const closeModifyDialog = () => {
   uploadForm.value.picture = '';
   modifyDialogVisible.value = false;
 };
-//添加用户
-const addproduct = async () => {
-  try {
-    // 校验表单
-    await productFormRef.value.validate();
-    // 创建一个新的表单数据对象
-    const formData = {
-      ...productForm.value,
-      introduce: textarea.value,  // 合并描述信息
-      picture: uploadForm.value.picture,  // 合并图片信息
-    };
-
-
-    // 发送请求到后端
-    const { data: res } = await axios.post('/product/add-one-product', formData);
-
-    // 根据返回的消息进行提示
-    if (res.message === "新增产品成功！") {
-      ElMessage.success('添加菜品成功！');
-      //清空
-      isSelect.value = false;
-      isUpload.value = false;
-      productFormRef.value.resetFields();
-      closeAddDialog();  // 关闭对话框
-      getProductList();  // 更新用户列表
-    } else {
-      ElMessage.error('添加菜品失败！');
-    }
-  } catch (error) {
-    console.error(error);
-    ElMessage.error('添加菜品失败！');
-  }finally{
-    getProductList();
-  }
-};
 //购物车
 const cart = ref<Cart>({});
 
@@ -375,6 +494,7 @@ const addToCart = (productId: string) => {
   const product = productList.value.find(p => p.id === productId);
   if (product && !cart.value[productId]) {
     cart.value[productId] = {
+      table: selectedTable.value || '',
       id: productId,
       quantity: 1,
       price: product.price,
@@ -405,10 +525,13 @@ const totalItems = computed(() => {
   return Object.values(cart.value).reduce((total, item) => total + item.quantity, 0);
 });
 // 跳转到购物车页面
-const goToCartPage = () => {
-  // 这里可以添加跳转到购物车页面的逻辑
-  console.log('跳转到购物车页面');
+const pay = () => {
+  // 将购物车数据存入 sessionStorage
+  sessionStorage.setItem('cartForm', JSON.stringify(cart.value));
+  // 跳转到购物车页面
+  router.push('/pay');
 };
+
 const getProductList = async () => {
   // 构造查询参数
   const queryParam = {
@@ -435,50 +558,10 @@ const getProductList = async () => {
   }
 };
 
-//修改用户信息
-const modifyProduct = async (row) => {
-  try {
-    // 校验表单
-    await productFormRef.value.validate();
-    // 判断是否提交了图片
-    if(isSelect.value && !isUpload.value){
-      console.log(isUpload.value);
-      ElMessage.error('有图片未提交！请提交图片！');
-      return;
-    }
-
-    // 创建一个新的表单数据对象
-    const formData = {
-      ...productForm.value,
-    };
-
-
-    // 发送请求到后端
-    const { data: res } = await axios.post('/product/upd-one-product', formData);
-
-    // 根据返回的消息进行提示
-    if (res.message === "修改产品信息成功！") {
-      ElMessage.success('修改成功！');
-      isSelect.value = false;
-      isUpload.value = false;
-      productFormRef.value.resetFields();
-      closeModifyDialog();  // 关闭对话框
-      getProductList();  // 更新用户列表
-    } else {
-      ElMessage.error('修改失败！');
-    }
-  } catch (error) {
-    console.error(error);
-    ElMessage.error('修改失败！');
-  }finally{
-    getProductList();
-  }
-};
-
-
 // 在组件挂载时调用 getProductList
 onMounted(() => {
-  getProductList();
+  loadTableList();
+  checkTableSelection();
 });
 
 
@@ -504,5 +587,16 @@ onMounted(() => {
 .product-actions {
   margin-top: 20px;
 }
+.table-selection {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
 
+.table-selection .el-button {
+  width: 80px;
+  height: 50px;
+  font-size: 14px;
+}
 </style>

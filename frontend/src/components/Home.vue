@@ -51,7 +51,7 @@
               </template>
               <el-menu-item index="/table" >
                 <el-icon><OfficeBuilding /></el-icon>
-                  台号管理
+                  订单管理
               </el-menu-item>
               <el-menu-item index="/dish" >
                 <el-icon><Dish /></el-icon>
