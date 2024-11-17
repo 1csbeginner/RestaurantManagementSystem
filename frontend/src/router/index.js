@@ -5,6 +5,7 @@ import Welcome from '../components/Welcome.vue'
 import Users from '../components/users/Users.vue'
 import Info from '../components/users/Info.vue'
 import Dish from '../components/product/Products.vue'
+import Table from '../components/product/Table.vue'
 import Order from '../components/order/Order.vue'
 import Pay from '../components/order/Pay.vue'
 
@@ -22,7 +23,8 @@ const router = createRouter({
       {path : '/info', component: Info},
       {path : '/dish', component: Dish},
       {path : '/order', component: Order},
-      {path : '/pay', component: Pay}
+      {path : '/pay', component: Pay},
+      {path : '/table', component: Table}
       ]
     }
   ],
