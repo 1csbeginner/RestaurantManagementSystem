@@ -35,7 +35,7 @@
                 <el-icon><KnifeFork /></el-icon>
                 <span>前台服务</span>
               </template>
-              <el-menu-item index="/order">
+              <el-menu-item index="/order" v-show="isPaid">
                 <el-icon><food /></el-icon>
                 点菜
               </el-menu-item>
@@ -95,7 +95,8 @@ export default{
     return{
       isCollapse: false,
       isManager: null,
-      activePath: sessionStorage.getItem('activePath') || this.$route.path
+      activePath: sessionStorage.getItem('activePath') || this.$route.path,
+      isPaid: sessionStorage.getItem('isPaid') || false
     }
   },
   async created() {
