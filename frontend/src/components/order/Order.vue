@@ -582,6 +582,11 @@ onMounted(() => {
   if (cartData) {
     cart.value = JSON.parse(cartData);
   }
+  if(sessionStorage.getItem('isPaid') === 'true'){
+    sessionStorage.setItem('isPaid', 'false');
+    sessionStorage.removeItem('cartForm');
+    cart.value = {};
+  }
 });
 
 

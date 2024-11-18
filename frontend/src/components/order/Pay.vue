@@ -20,6 +20,9 @@
 </el-table>
 <el-row type="flex" justify="end" class="total">
   <el-col :span="7" style="text-align: right; padding-right: 50px; font-weight: bold;">
+    <el-button type="primary" @click="openhistoryDialog">订单记录</el-button>
+  </el-col>
+  <el-col :span="7" style="text-align: right; padding-right: 50px; font-weight: bold;">
     <span>总计: </span>
     <span>{{ totalAmount }}元</span>
   </el-col>
@@ -31,11 +34,30 @@
   </el-col>
 </el-row>
   </el-card>
+<el-dialog
+  title="历史记录"
+  v-model="historyDialogVisible"
+  width="750px"
+  @close="closeHistoryDialog"
+>
+  <el-table :data="Object.values(history)" style="width: 100%">
+    <el-table-column label="菜品" prop="name"></el-table-column>
+    <el-table-column label="数量" prop="quantity"></el-table-column>
+    <el-table-column label="单价" prop="price"></el-table-column>
+    <el-table-column label="总价" :formatter="formatTotalPrice"></el-table-column>
+  </el-table>
+  <el-row type="flex" justify="end" class="total">
+    <el-col :span="7" style="text-align: right; padding-right: 50px; font-weight: bold;">
+      <el-button type="primary" @click="closeHistoryDialog">关闭</el-button>
+    </el-col>
+  </el-row>
+</el-dialog>
+
   <!--添加-->
 </template>
 <script lang="ts" setup>
-import { ref, onMounted, computed } from 'vue'; // 导入 Vue 的功能
-import { useRouter , onBeforeRouteLeave} from 'vue-router'; // 导入 useRouter
+import { ref, onMounted, computed, watch } from 'vue'; // 导入 Vue 的功能
+import { useRouter } from 'vue-router'; // 导入 useRouter
 import { ArrowRight} from '@element-plus/icons-vue'; // 导入图标
 import { ElMessage } from 'element-plus'; // 导入 ElMessage
 import axios from 'axios'; // 导入 axios
@@ -50,10 +72,43 @@ const loadCart = () => {
 const cart = ref<Array<{ id: string; name: string; quantity: number; price: number }>>([]);
 const selectedTable = ref(sessionStorage.getItem('table'));
 const isVip = ref(sessionStorage.getItem('isVip'));
-const isPaid = ref(false);
+// 是否支付（保存在 sessionStorage 中）
+const isPaid = ref(sessionStorage.getItem('isPaid') === 'true' || false);
+//保存历史记录方便用户查询
+interface CartItem {
+  id: string;
+  name: string;
+  quantity: number;
+  price: number;
+}
+
+interface history {
+  [key: string]: CartItem;
+}
+const history = ref<{ [key: string]: { id: string; name: string; price: number; quantity: number } }>({});
+const historyDialogVisible = ref(false);
+const openhistoryDialog = () => {
+  historyDialogVisible.value = true;
+  const storedHistory = sessionStorage.getItem('history');
+  if (storedHistory) {
+    const parsedHistory = JSON.parse(storedHistory);
+    console.log('Parsed history from sessionStorage:', parsedHistory);
+    history.value = parsedHistory;
+    console.log('Updated history.value:', history.value);
+  } else {
+    history.value = {};
+  }
+};
+
+const closeHistoryDialog = () => {
+  historyDialogVisible.value = false;
+};
+
 const formatTotalPrice = (row: { quantity: number; price: number }) => {
-    const totalPrice = row.quantity * row.price;
-    return totalPrice.toFixed(2); // 保留两位小数
+    if(row.quantity && row.price){
+      const totalPrice = row.quantity * row.price;
+      return totalPrice.toFixed(2); // 保留两位小数
+    }
   }
 const totalAmount = computed(() => {
   if(isVip.value === '0'){
@@ -62,15 +117,14 @@ const totalAmount = computed(() => {
     return Object.values(cart.value).reduce((total, item) => total + item.price * item.quantity, 0) * 0.5;
   }
 });
-
 const router = useRouter();
 const cancel = () => {
- if(isPaid.value){
-  sessionStorage.removeItem('cartForm');
- }
- isPaid.value = false;
- router.push('/order');
- sessionStorage.setItem('activePath', '/order');
+  if(isPaid.value){
+   sessionStorage.removeItem('cartForm');
+  }
+  isPaid.value = false;
+  router.push('/order');
+  sessionStorage.setItem('activePath', '/order');
 };
 const removeFromCart = (productId) => {
   ElMessageBox.confirm('您确定要删除这个菜品吗？', '确认删除', {
@@ -95,6 +149,7 @@ const pay = async () => {
       table: selectedTable.value, // 桌号
       user: sessionStorage.getItem('name'), // 用户名
       Vip: isVip.value, // 是否会员
+      state: false, // 是否支付
       items: Object.values(cart.value).map(item => ({
         id: item.id,
         name: item.name,
@@ -129,9 +184,28 @@ const pay = async () => {
       };
       const {data : res} = await axios.post('/indent/add-one-indent', orderData);
       if(res.message === '新增产品成功！'){
-        ElMessage.success('订单已成功上传！');
+        ElMessage.success('支付成功');
         isPaid.value = true;
         loadCart();
+        //保存历史记录
+         // 先从 sessionStorage 中获取当前的历史记录
+        let currentHistory = JSON.parse(sessionStorage.getItem('history') || '{}');
+
+        // 将新的菜品项添加到历史记录中
+        data.items.forEach(item => {
+          if (!currentHistory[item.id]) {
+            currentHistory[item.id] = item; // 如果历史记录中没有该菜品，直接添加
+          } else {
+            currentHistory[item.id].quantity += item.quantity; // 如果已有，更新数量
+          }
+        });
+
+        // 将更新后的历史记录保存回 sessionStorage
+        sessionStorage.setItem('history', JSON.stringify(currentHistory));
+
+        // 更新 Vue 响应式的 history
+        history.value = { ...currentHistory }; // 确保响应式更新
+
       } else {
         ElMessage.error('支付失败，请稍后再试！');
       }
@@ -146,26 +220,15 @@ const pay = async () => {
 const saveCart = () => {
   sessionStorage.setItem('cartForm', JSON.stringify(cart.value));
 };
-// 使用路由守卫控制跳转时是否清空购物车
-onBeforeRouteLeave((to, from, next) => {
-  console.log('Before route change', to.path, isPaid.value); // 打印调试信息
-  if (to.path === '/order' && isPaid.value === true) {
-    // 如果是跳转到 /order 页面且支付，清空购物车
-    sessionStorage.removeItem('cartForm');  // 清空购物车数据（如果存在于 localStorage）
-    cart.value = [];  // 清空购物车数据
-  }
-  next();  // 确保路由继续跳转
-});
 
-// 你的路由跳转方法
-const goToOrderPage = () => {
-  router.push({ name: '/order' });  // 跳转到订单页面
-};
 //删除用户提示
 import { ElMessageBox } from 'element-plus'
 // 在组件挂载时调用 getProductList
 onMounted(() => {
   loadCart();
+});
+watch(isPaid, (newVal) => {
+  sessionStorage.setItem('isPaid', newVal.toString());
 });
 </script>
 <style lang="less" scoped></style>
