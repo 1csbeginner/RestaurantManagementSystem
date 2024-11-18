@@ -80,7 +80,9 @@ public class IndentController {
         //mybatis-plus分页
         Page<Indent> page = new Page<>(current, pageSize);
         QueryWrapper<Indent> wrapper = new QueryWrapper<>();
-
+        Integer tablenumber = indent.getTablenumber();
+        if (tablenumber != null) {
+            wrapper.eq("tablenumber", tablenumber);}
 
         wrapper.orderByDesc("gmt_create");
 

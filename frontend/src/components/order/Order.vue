@@ -338,7 +338,6 @@ const selectedTableName = ref<string | null>(null);
 const loadTableList = () => {
   const savedTableList = localStorage.getItem('tableList');
   if (savedTableList) {
-    console.log('已有存档');
     tableList.value = JSON.parse(savedTableList);
   } else {
     tableList.value = Array.from({ length: 20 }, (_, index) => ({
@@ -442,6 +441,7 @@ const updateTableList = (id: string, isOccupied: boolean) => {
   const username = sessionStorage.getItem('name'); // 获取当前用户名
 
   if (table && username) {
+    console.log(isOccupied)
     table.isOccupied = isOccupied;  // 更新占用状态
     table.user = isOccupied ? username : null;  // 如果占用状态为真，设置占用者；如果为假，则清空占用者
 
@@ -449,9 +449,11 @@ const updateTableList = (id: string, isOccupied: boolean) => {
   }
 };
 const handleClose = () => {
+  //如果选好了就点菜
   if(selectedTable.value){
-    updateTableList(selectedTable.value, false);
+    getProductList();
   }else{
+    //不选就返回主页
     router.push('/home');
   }
 };
