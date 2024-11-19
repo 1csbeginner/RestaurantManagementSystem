@@ -84,6 +84,7 @@ public class IndentController {
         if (tablenumber != null) {
             wrapper.eq("tablenumber", tablenumber);}
 
+        
         wrapper.orderByDesc("gmt_create");
 
         Page<Indent> result = indentService.selectPage(page, wrapper);

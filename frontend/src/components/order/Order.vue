@@ -19,7 +19,7 @@
       <el-button
         v-for="table in tableList"
         :key="table.id"
-        :disabled="table.isOccupied && table.user !== name"
+        :disabled="table.isOccupied && table.user !== name || isPaid"
         @click="selectTable(table)"
         :type="table.isOccupied ? 'success' : 'primary'"
       >
@@ -251,6 +251,9 @@ const productForm = ref({
 const uploadForm = ref({
   picture: ''
 });
+// 是否已支付
+const isPaid = computed(() => sessionStorage.getItem('isPaid') === 'true');
+
 //购物车
 interface CartItem {
   table: string;
@@ -433,6 +436,7 @@ const confirmTable = () => {
   updateTableList(selectedTable.value, true);
 
   ElMessage.success(`已选择桌号: ${selectedTableName.value}`);
+  sessionStorage.setItem('table', selectedTable.value);
   getProductList(); // 加载点菜页面
 };
 
@@ -583,11 +587,6 @@ onMounted(() => {
   const cartData = sessionStorage.getItem('cartForm');
   if (cartData) {
     cart.value = JSON.parse(cartData);
-  }
-  if(sessionStorage.getItem('isPaid') === 'true'){
-    sessionStorage.setItem('isPaid', 'false');
-    sessionStorage.removeItem('cartForm');
-    cart.value = {};
   }
 });
 

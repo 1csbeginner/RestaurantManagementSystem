@@ -20,39 +20,20 @@
 </el-table>
 <el-row type="flex" justify="end" class="total">
   <el-col :span="7" style="text-align: right; padding-right: 50px; font-weight: bold;">
-    <el-button type="primary" @click="openhistoryDialog">订单记录</el-button>
-  </el-col>
-  <el-col :span="7" style="text-align: right; padding-right: 50px; font-weight: bold;">
     <span>总计: </span>
     <span>{{ totalAmount }}元</span>
   </el-col>
   <el-col :span="2">
-    <el-button type="primary" @click="cancel">继续加菜</el-button>
+    <el-button type="primary" :disabled="isPaid" @click="cancel">继续加菜</el-button>
   </el-col>
-  <el-col :span="3">
-    <el-button type="primary" :disabled="isPaid || totalAmount === 0" @click="pay" style="margin-left: 40px;">结账</el-button>
+  <el-col :span="2">
+    <el-button type="primary" :disabled="isPaid || totalAmount === 0" @click="submit">提交订单</el-button>
+  </el-col>
+  <el-col :span="2">
+    <el-button type="primary" :disabled="isPaid || totalAmount === 0" @click="pay" style="margin-left: 20px;">结账</el-button>
   </el-col>
 </el-row>
   </el-card>
-<el-dialog
-  title="历史记录"
-  v-model="historyDialogVisible"
-  width="750px"
-  @close="closeHistoryDialog"
->
-  <el-table :data="Object.values(history)" style="width: 100%">
-    <el-table-column label="菜品" prop="name"></el-table-column>
-    <el-table-column label="数量" prop="quantity"></el-table-column>
-    <el-table-column label="单价" prop="price"></el-table-column>
-    <el-table-column label="总价" :formatter="formatTotalPrice"></el-table-column>
-  </el-table>
-  <el-row type="flex" justify="end" class="total">
-    <el-col :span="7" style="text-align: right; padding-right: 50px; font-weight: bold;">
-      <el-button type="primary" @click="closeHistoryDialog">关闭</el-button>
-    </el-col>
-  </el-row>
-</el-dialog>
-
   <!--添加-->
 </template>
 <script lang="ts" setup>
@@ -69,12 +50,13 @@ const loadCart = () => {
     cart.value = JSON.parse(cartData);
   }
 };
-const cart = ref<Array<{ id: string; name: string; quantity: number; price: number }>>([]);
+const cart = ref<Array<{ id: string; name: string; quantity: number; price: number; table:string}>>([]);
 const selectedTable = ref(sessionStorage.getItem('table'));
 const isVip = ref(sessionStorage.getItem('isVip'));
 // 是否支付（保存在 sessionStorage 中）
 const isPaid = ref(sessionStorage.getItem('isPaid') === 'true' || false);
-//保存历史记录方便用户查询
+const isSubmit = ref(false);
+//提交订单（保存在session中）
 interface CartItem {
   id: string;
   name: string;
@@ -82,26 +64,35 @@ interface CartItem {
   price: number;
 }
 
-interface history {
-  [key: string]: CartItem;
+interface order {
+  [table: string]: CartItem;
 }
-const history = ref<{ [key: string]: { id: string; name: string; price: number; quantity: number } }>({});
-const historyDialogVisible = ref(false);
-const openhistoryDialog = () => {
-  historyDialogVisible.value = true;
-  const storedHistory = sessionStorage.getItem('history');
-  if (storedHistory) {
-    const parsedHistory = JSON.parse(storedHistory);
-    console.log('Parsed history from sessionStorage:', parsedHistory);
-    history.value = parsedHistory;
-    console.log('Updated history.value:', history.value);
-  } else {
-    history.value = {};
-  }
-};
+const order = ref<{ [table: string]: Array<{ id: string; name: string; price: number; quantity: number }> }>({});
 
-const closeHistoryDialog = () => {
-  historyDialogVisible.value = false;
+const submit = () => {
+  //转换为数组
+  cart.value = Object.values(cart.value); // 将对象转换为数组
+
+  // 遍历 cart，将数据按 table 分类存入 order
+  cart.value.forEach((item) => {
+    const { table, ...orderItem } = item;
+
+    // 如果当前桌号在 order 中不存在，则初始化为空数组
+    if (!order.value[table]) {
+      order.value[table] = [];
+    }
+
+    // 将当前订单加入对应的桌号
+    order.value[table].push(orderItem);
+  });
+
+  // 将分类后的 order 保存到 sessionStorage
+  sessionStorage.setItem("order", JSON.stringify(order.value));
+  ElMessage.success("订单已提交！");
+  isSubmit.value = true;
+
+  // 打印结果以便调试
+  console.log("Order after submit:", order.value);
 };
 
 const formatTotalPrice = (row: { quantity: number; price: number }) => {
@@ -144,12 +135,28 @@ const removeFromCart = (productId) => {
   });
 };
 const pay = async () => {
-    // 1. 构造数据
+  // 1. 构造数据
+  if (!isSubmit.value) {
+    ElMessage.error('请先提交订单！');
+    return;
+  }
+
+  // 2. 弹出确认框，确认付款
+  ElMessageBox.confirm(
+    '确认付款吗？付款后不能再加菜！',
+    '支付确认',
+    {
+      confirmButtonText: '确认',
+      cancelButtonText: '取消',
+      type: 'warning',
+    }
+  )
+  .then(async () => {
+    // 用户点击确认后的逻辑（支付操作）
     const data = {
       table: selectedTable.value, // 桌号
       user: sessionStorage.getItem('name'), // 用户名
       Vip: isVip.value, // 是否会员
-      state: false, // 是否支付
       items: Object.values(cart.value).map(item => ({
         id: item.id,
         name: item.name,
@@ -160,16 +167,15 @@ const pay = async () => {
       timestamp: new Date().toISOString(), // 时间戳
     };
 
-      // 3. 生成 JSON 文件
-  const jsonData = JSON.stringify(data, null, 2); // 格式化 JSON
-  const blob = new Blob([jsonData], { type: 'application/json' });
-  const fileName = `order_${selectedTable.value}_${Date.now()}.json`;
-  //创建 FormData 对象并附加文件
-  const formData = new FormData();
-  formData.append('file', blob, fileName);
+    // 3. 生成 JSON 文件
+    const jsonData = JSON.stringify(data, null, 2); // 格式化 JSON
+    const blob = new Blob([jsonData], { type: 'application/json' });
+    const fileName = `order_${selectedTable.value}_${Date.now()}.json`;
+    // 创建 FormData 对象并附加文件
+    const formData = new FormData();
+    formData.append('file', blob, fileName);
 
-  // 4. 上传文件到后端
-  try {
+    // 4. 上传文件到后端
     const response = await axios.post('/indent/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data', // 告诉服务器这是一个文件上传请求
@@ -179,32 +185,40 @@ const pay = async () => {
     if (response.data.message === '上传成功') {
       const orderData = {
         tablenumber: selectedTable.value,
-        preview : response.data.data,
+        preview: response.data.data,
         price: totalAmount.value,
       };
-      const {data : res} = await axios.post('/indent/add-one-indent', orderData);
-      if(res.message === '新增产品成功！'){
+      const { data: res } = await axios.post('/indent/add-one-indent', orderData);
+      if (res.message === '新增产品成功！') {
         ElMessage.success('支付成功');
         isPaid.value = true;
+        sessionStorage.removeItem('order');
+        // 释放桌子
+        // 获取本地存储的桌子列表
+        const tableList = JSON.parse(localStorage.getItem('tableList') || '[]');
+        console.log('tableList:', tableList);
+
+        // 获取 sessionStorage 中存储的当前桌号
+        const currentTableNumber = sessionStorage.getItem('table');
+        console.log('currentTableNumber:', currentTableNumber);
+
+        // 查找当前桌号对应的桌子信息
+        const currentTable = tableList.find((table) => table.id === currentTableNumber);
+        console.log('currentTable:', currentTable);
+
+        if (currentTable) {
+          console.log('currentTable:', currentTable);
+          // 修改桌子的状态，例如释放桌子
+          currentTable.isOccupied = false;  // 假设桌子有 isOccupied 状态，表示是否被占用
+          currentTable.user = null;
+        }
+
+        // 更新本地存储中的桌子列表
+        localStorage.setItem('tableList', JSON.stringify(tableList));
+
+        // 清除 sessionStorage 中的桌号信息
+        sessionStorage.removeItem('table');
         loadCart();
-        //保存历史记录
-         // 先从 sessionStorage 中获取当前的历史记录
-        let currentHistory = JSON.parse(sessionStorage.getItem('history') || '{}');
-
-        // 将新的菜品项添加到历史记录中
-        data.items.forEach(item => {
-          if (!currentHistory[item.id]) {
-            currentHistory[item.id] = item; // 如果历史记录中没有该菜品，直接添加
-          } else {
-            currentHistory[item.id].quantity += item.quantity; // 如果已有，更新数量
-          }
-        });
-
-        // 将更新后的历史记录保存回 sessionStorage
-        sessionStorage.setItem('history', JSON.stringify(currentHistory));
-
-        // 更新 Vue 响应式的 history
-        history.value = { ...currentHistory }; // 确保响应式更新
 
       } else {
         ElMessage.error('支付失败，请稍后再试！');
@@ -212,10 +226,11 @@ const pay = async () => {
     } else {
       ElMessage.error('支付失败，请稍后再试！');
     }
-  } catch (error) {
-    ElMessage.error('上传时出现错误，请检查网络连接！');
-    console.error(error);
-  }
+  })
+  .catch(() => {
+    // 用户点击取消或者关闭时执行的逻辑
+    ElMessage.info('支付已取消');
+  });
 };
 const saveCart = () => {
   sessionStorage.setItem('cartForm', JSON.stringify(cart.value));
