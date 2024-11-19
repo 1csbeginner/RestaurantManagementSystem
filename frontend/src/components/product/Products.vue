@@ -55,8 +55,8 @@
       <el-table-column prop="sort" label="菜系"></el-table-column>
       <el-table-column label="操作">
         <template v-slot="scope">
-          <el-button type="primary" :icon="Edit"  :disabled="Object.values(cart).some(item => item.id === scope.row.id)" @click="openModifyDialog(scope.row.id)"/>
-          <el-button type="danger" :icon="Delete" :disabled="Object.values(cart).some(item => item.id === scope.row.id)" @click="remove(scope.row.id)"/>
+          <el-button type="primary" :icon="Edit"  :disabled="dishIds.includes(scope.row.id)" @click="openModifyDialog(scope.row.id)"/>
+          <el-button type="danger" :icon="Delete" :disabled="dishIds.includes(scope.row.id)" @click="remove(scope.row.id)"/>
         </template>
       </el-table-column>
     </el-table>
@@ -222,7 +222,6 @@ import axios from 'axios'; // 导入 axios
 // 使用 ref 来定义响应式数据
 //默认搜索方式
 const searchType = ref('name');
-const Select = ref(null);
 const queryInfo = ref({
   query: '',
   //当前页码
@@ -232,7 +231,8 @@ const queryInfo = ref({
 });
 const productList = ref([]); // 定义用户列表
 //定义购物车(检查要删除的菜是否在购物车中)
-const cart = ref<Array<{ id: string; name: string; quantity: number; price: number }>>([]);
+const order = ref<{ [table: string]: Array<{ id: string; name: string; price: number; quantity: number }> }>({});
+const dishIds = ref([]);  // 定义一个空数组，用于存放所有菜品的 id
 const total = ref(0);
 //用户表单
 //id用于修改菜品功能
@@ -675,9 +675,11 @@ const submitUpload = async (): Promise<void> => {
 // 在组件挂载时调用 getProductList
 onMounted(() => {
   getProductList();
-  const cartData = sessionStorage.getItem('cartForm');
-  if(cartData) {
-    cart.value = JSON.parse(cartData);
+  const orderData = sessionStorage.getItem('order');
+  if(orderData){
+    order.value = JSON.parse(orderData);
+    dishIds.value = Object.values(order.value).flat().map(item => item.id);
+    console.log(dishIds.value);  // 输出所有菜品的 id
   }
 });
 </script>
