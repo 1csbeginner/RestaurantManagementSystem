@@ -212,12 +212,13 @@
 
 </template>
 <script lang="ts" setup>
-import { ref, onMounted, computed } from 'vue'; // 导入 Vue 的功能
+import { ref, onMounted, computed, onUnmounted } from 'vue'; // 导入 Vue 的功能
+
+let intervalId: ReturnType<typeof setInterval> | null = null;
 import { ArrowRight, Search, Delete, Edit} from '@element-plus/icons-vue'; // 导入图标
 import { ElMessage } from 'element-plus'; // 导入 ElMessage
 import axios from 'axios'; // 导入 axios
 import router from '@/router';
-import { s } from 'vite/dist/node/types.d-aGj9QkWt';
 
 // 使用 ref 来定义响应式数据
 
@@ -587,6 +588,14 @@ onMounted(() => {
   const cartData = sessionStorage.getItem('cartForm');
   if (cartData) {
     cart.value = JSON.parse(cartData);
+  }
+  intervalId = setInterval(() => {
+    loadTableList(); // 定时加载桌子状态
+  }, 500);
+});
+onUnmounted(() => {
+  if (intervalId !== null) {
+    clearInterval(intervalId); // 清理定时器
   }
 });
 
