@@ -57,42 +57,34 @@ const isVip = ref(sessionStorage.getItem('isVip'));
 const isPaid = ref(sessionStorage.getItem('isPaid') === 'true' || false);
 const isSubmit = ref(false);
 //提交订单（保存在session中）
-interface CartItem {
-  id: string;
-  name: string;
-  quantity: number;
-  price: number;
-}
-
-interface order {
-  [table: string]: CartItem;
-}
-const order = ref<{ [table: string]: Array<{ id: string; name: string; price: number; quantity: number }> }>({});
 
 const submit = () => {
-  //转换为数组
+  // 确保 cart 为数组格式
   cart.value = Object.values(cart.value); // 将对象转换为数组
 
-  // 遍历 cart，将数据按 table 分类存入 order
-  cart.value.forEach((item) => {
+  // 获取当前桌号（用桌号作为标识）
+  const currentTable = sessionStorage.getItem("table"); // 获取当前桌号
+
+  // 从 localStorage 获取所有用户的订单
+  const allOrders = JSON.parse(localStorage.getItem("orders") || "{}"); // 如果没有数据则初始化为空对象
+
+  // 创建或更新当前桌号的订单
+  const userOrders = cart.value.map((item) => {
     const { table, ...orderItem } = item;
-
-    // 如果当前桌号在 order 中不存在，则初始化为空数组
-    if (!order.value[table]) {
-      order.value[table] = [];
-    }
-
-    // 将当前订单加入对应的桌号
-    order.value[table].push(orderItem);
+    return orderItem; // 只需要订单项，不需要桌号信息
   });
 
-  // 将分类后的 order 保存到 sessionStorage
-  sessionStorage.setItem("order", JSON.stringify(order.value));
+  // 将新订单替换掉原来桌号的订单
+  allOrders[currentTable] = userOrders;
+
+  // 更新所有用户的订单并保存到 localStorage
+  localStorage.setItem("orders", JSON.stringify(allOrders)); // 保存到 localStorage
+
   ElMessage.success("订单已提交！");
   isSubmit.value = true;
 
   // 打印结果以便调试
-  console.log("Order after submit:", order.value);
+  console.log("Updated Orders:", allOrders);
 };
 
 const formatTotalPrice = (row: { quantity: number; price: number }) => {
@@ -192,7 +184,14 @@ const pay = async () => {
       if (res.message === '新增产品成功！') {
         ElMessage.success('支付成功');
         isPaid.value = true;
-        sessionStorage.removeItem('order');
+        //删除订单
+        const allOrders = JSON.parse(localStorage.getItem("orders") || "{}");
+        const deleteTable = sessionStorage.getItem("table");
+        if (allOrders[deleteTable]) {
+          delete allOrders[deleteTable]; // 删除桌号 A1 的订单
+          localStorage.setItem("orders", JSON.stringify(allOrders));
+        }
+
         // 释放桌子
         // 获取本地存储的桌子列表
         const tableList = JSON.parse(localStorage.getItem('tableList') || '[]');

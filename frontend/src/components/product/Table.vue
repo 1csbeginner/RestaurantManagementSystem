@@ -24,7 +24,7 @@
   </el-card>
 </template>
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { ArrowRight } from '@element-plus/icons-vue';
 
 interface CartItem {
@@ -42,25 +42,43 @@ interface Order {
 
 const tableList = ref<Order[]>([]);
 
-// 获取订单数据
 const getTableList = () => {
-  const savedOrder = sessionStorage.getItem('order');
+  const savedOrder = localStorage.getItem('orders');
+
   if (savedOrder) {
     const orderData = JSON.parse(savedOrder);
-    // 解析订单数据
+
+    // 遍历每个桌号的订单
     tableList.value = Object.entries(orderData).map(([table, items]: [string, CartItem[]]) => {
+      // 确保 items 是一个数组
+      if (!Array.isArray(items)) {
+        console.error(`Expected items to be an array, but got:`, items);
+        items = [items];  // 如果不是数组，将其包装成数组
+      }
+
+      // 计算每个桌号的总金额
       const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
       return {
-        tablenumber: table,
-        items,
-        price: totalAmount,
+        tablenumber: table,  // 桌号
+        items,  // 菜品列表
+        price: totalAmount,  // 总金额
       };
     });
+  } else {
+    // 如果没有数据，清空 tableList
+    tableList.value = [];
   }
 };
 
+let intervalId: ReturnType<typeof setInterval>;
+
 onMounted(() => {
   getTableList();
+  intervalId = setInterval(getTableList, 500);
+});
+onUnmounted(() => {
+  clearInterval(intervalId);
 });
 </script>
 <style lang="less" scoped></style>

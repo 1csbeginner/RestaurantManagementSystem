@@ -214,7 +214,7 @@
   </el-dialog>
 </template>
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue'; // 导入 Vue 的功能
+import { ref, onMounted, onUnmounted } from 'vue'; // 导入 Vue 的功能
 import { ArrowRight, Search, Delete, Edit} from '@element-plus/icons-vue'; // 导入图标
 import { ElMessage } from 'element-plus'; // 导入 ElMessage
 import axios from 'axios'; // 导入 axios
@@ -264,7 +264,6 @@ const handleSizeChange = (newSize) => {
   queryInfo.value.pagesize = newSize;
   getProductList();
 };
-const currentName = ref(sessionStorage.getItem("name"));
 //当前页
 const handleCurrentChange = (newPage) => {
   queryInfo.value.pagenum = newPage;
@@ -670,17 +669,27 @@ const submitUpload = async (): Promise<void> => {
     console.error('上传错误:', error);
   }
 };
-
-
-// 在组件挂载时调用 getProductList
-onMounted(() => {
-  getProductList();
-  const orderData = sessionStorage.getItem('order');
+const loadOrder = () => {
+  const orderData = localStorage.getItem('orders');
   if(orderData){
     order.value = JSON.parse(orderData);
     dishIds.value = Object.values(order.value).flat().map(item => item.id);
     console.log(dishIds.value);  // 输出所有菜品的 id
   }
+}
+
+// 在组件挂载时调用 getProductList
+let intervalId: ReturnType<typeof setInterval>;
+
+onMounted(() => {
+  getProductList();
+  loadOrder();
+  intervalId = setInterval(() => {
+    getProductList();
+  }, 500);
+});
+onUnmounted(() => {
+  clearInterval(intervalId);
 });
 </script>
 <style lang="less" scoped></style>
