@@ -100,7 +100,7 @@
         <el-form-item label="描述" prop="introduce">
           <el-input
             v-model="textarea"
-            maxlength="30"
+            maxlength="100"
             style="width: 240px"
             placeholder="请输入描述"
             show-word-limit
@@ -171,7 +171,7 @@
         <el-form-item label="描述" prop="introduce">
           <el-input
             v-model="textarea"
-            maxlength="30"
+            maxlength="100"
             style="width: 240px"
             placeholder="请输入描述"
             show-word-limit
