@@ -8,6 +8,7 @@ import Dish from '../components/product/Products.vue'
 import Table from '../components/product/Table.vue'
 import Order from '../components/order/Order.vue'
 import Pay from '../components/order/Pay.vue'
+import Data from '../components/data/Data.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -24,7 +25,8 @@ const router = createRouter({
       {path : '/dish', component: Dish},
       {path : '/order', component: Order},
       {path : '/pay', component: Pay},
-      {path : '/table', component: Table}
+      {path : '/table', component: Table},
+      {path : '/data', component: Data}
       ]
     }
   ],

@@ -553,7 +553,6 @@ const modifyProduct = async (row) => {
 //删除用户提示
 import { ElMessageBox } from 'element-plus'
 import { id } from 'element-plus/es/locale';
-import { c } from 'vite/dist/node/types.d-aGj9QkWt';
 
 const remove = (productId) => {
   ElMessageBox.confirm(
