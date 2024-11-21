@@ -128,8 +128,7 @@ export default {
       return;
     }
     const { data: res } = await this.$http.post("user/list/1/9999", { name: value });
-    console.log(res.data.records[0]["name"]);
-    if (res.data.records[0]["name"] === this.registerForm.name) {
+    if (res.data.total >= 1 && res.data.records[0]["name"] === this.registerForm.name) {
       callback(new Error('用户名已存在'));
     } else {
       callback();
@@ -174,7 +173,7 @@ export default {
             //跳转到首页
             this.$router.push("/home");
           } else {
-            ElMessage.error("登录失败");
+            ElMessage.error("登录失败，用户不存在或密码错误！");
           }
         } else {
           return
@@ -204,6 +203,7 @@ export default {
 
             // 保存登录状态
             window.sessionStorage.setItem("name", this.registerForm.name);
+            window.sessionStorage.setItem("password", this.registerForm.password);
             window.sessionStorage.setItem("isLogin", 'true');
 
             // 跳转到首页

@@ -34,7 +34,7 @@
       </el-col>
     </el-row>
     <!--用户列表-->
-    <el-table :data="productList" stripe>
+    <el-table :data="productList" stripe empty-text="暂无菜品">
       <el-table-column prop="id" label="id"></el-table-column>
       <el-table-column label="图片">
         <!-- 使用 scoped-slot 来显示图片 -->
@@ -673,7 +673,6 @@ const loadOrder = () => {
   if(orderData){
     order.value = JSON.parse(orderData);
     dishIds.value = Object.values(order.value).flat().map(item => item.id);
-    console.log(dishIds.value);  // 输出所有菜品的 id
   }
 }
 
@@ -682,9 +681,10 @@ let intervalId: ReturnType<typeof setInterval>;
 
 onMounted(() => {
   getProductList();
+  //加载订单(确认哪些不能删除)
   loadOrder();
   intervalId = setInterval(() => {
-    getProductList();
+    loadOrder();
   }, 500);
 });
 onUnmounted(() => {

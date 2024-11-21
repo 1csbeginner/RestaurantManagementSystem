@@ -66,7 +66,7 @@
     <!--用户列表-->
     <el-container style="height: 100vh;margin-top: 10px;">
             <!-- 左侧菜单 -->
-        <el-aside width="250px" style="background: #f5f5f5;margin-top: 20px;">
+        <el-aside width="150px" style="background: #f5f5f5;margin-top: 20px;">
           <el-menu
             :default-active="activeIndex"
             class="el-menu-vertical-demo"
@@ -91,6 +91,7 @@
                       :src="product.picture"
                       class="product-img"
                       @click="openModifyDialog(product.id)"
+                      style="height: 300px; width: 300px;"
                       alt="product"
                       fit="cover"
                     />

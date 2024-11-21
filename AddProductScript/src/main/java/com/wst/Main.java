@@ -108,7 +108,7 @@ public class Main {
                     String extension = tmpname.substring(index+1);
                     if(extension.equals("txt")) {
                         products[cur][2]=name;
-                        products[cur][3]=new String(Files.readAllBytes(tmp.toPath()),"GBK");
+                        products[cur][3]=new String(Files.readAllBytes(tmp.toPath()),"UTF-8");
                     }else{
                         products[cur][4]=name.replaceAll("[^0-9.]", "");
                         products[cur][5]=uploadFile(tmp, "http://localhost:8877/product/upload");

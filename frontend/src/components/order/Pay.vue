@@ -7,7 +7,7 @@
   </el-breadcrumb>
   <!--卡片视图-->
   <el-card >
-    <el-table :data="Object.values(cart)" style="width: 100%">
+    <el-table :data="Object.values(cart)" style="width: 100%" empty-text="暂无订单！">
       <el-table-column label="菜品" prop="name"></el-table-column>
       <el-table-column label="数量" prop="quantity"></el-table-column>
       <el-table-column label="单价" prop="price"></el-table-column>
@@ -56,6 +56,8 @@ const isVip = ref(sessionStorage.getItem('isVip'));
 // 是否支付（保存在 sessionStorage 中）
 const isPaid = ref(sessionStorage.getItem('isPaid') === 'true' || false);
 const isSubmit = ref(false);
+//统计菜系数量
+const orderCount = ref<Array<{count:number}>>([]);
 //提交订单（保存在session中）
 
 const submit = () => {
@@ -181,6 +183,11 @@ const pay = async () => {
         price: totalAmount.value,
       };
       const { data: res } = await axios.post('/indent/add-one-indent', orderData);
+      //统计这种菜的购买数量
+      const { data: sort } = await axios.get(`/product/get-one-product/${data.items[0].id}`);
+      console.log('sort:', sort.data.sort.split('-'));
+
+      //
       if (res.message === '新增产品成功！') {
         ElMessage.success('支付成功');
         isPaid.value = true;
@@ -188,7 +195,7 @@ const pay = async () => {
         const allOrders = JSON.parse(localStorage.getItem("orders") || "{}");
         const deleteTable = sessionStorage.getItem("table");
         if (allOrders[deleteTable]) {
-          delete allOrders[deleteTable]; // 删除桌号 A1 的订单
+          delete allOrders[deleteTable];
           localStorage.setItem("orders", JSON.stringify(allOrders));
         }
 

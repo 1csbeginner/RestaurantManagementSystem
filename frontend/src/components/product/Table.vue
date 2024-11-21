@@ -9,7 +9,7 @@
   <!-- 卡片视图 -->
   <el-card>
     <!-- 订单列表 -->
-    <el-table :data="tableList" stripe>
+    <el-table :data="tableList" stripe empty-text="暂无订单！">
       <el-table-column prop="tablenumber" label="桌号"></el-table-column>
       <el-table-column label="菜品">
         <!-- 使用 scoped slots 来动态显示菜品 -->
