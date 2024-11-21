@@ -214,7 +214,7 @@
   </el-dialog>
 </template>
 <script lang="ts" setup>
-import { ref, onMounted, onUnmounted } from 'vue'; // 导入 Vue 的功能
+import { ref, onMounted, onUnmounted, computed } from 'vue'; // 导入 Vue 的功能
 import { ArrowRight, Search, Delete, Edit} from '@element-plus/icons-vue'; // 导入图标
 import { ElMessage } from 'element-plus'; // 导入 ElMessage
 import axios from 'axios'; // 导入 axios
@@ -231,7 +231,6 @@ const queryInfo = ref({
 });
 const productList = ref([]); // 定义用户列表
 //定义购物车(检查要删除的菜是否在购物车中)
-const order = ref<{ [table: string]: Array<{ id: string; name: string; price: number; quantity: number }> }>({});
 const dishIds = ref([]);  // 定义一个空数组，用于存放所有菜品的 id
 const total = ref(0);
 //用户表单
@@ -552,7 +551,6 @@ const modifyProduct = async (row) => {
 };;
 //删除用户提示
 import { ElMessageBox } from 'element-plus'
-import { id } from 'element-plus/es/locale';
 
 const remove = (productId) => {
   ElMessageBox.confirm(
@@ -668,13 +666,11 @@ const submitUpload = async (): Promise<void> => {
     console.error('上传错误:', error);
   }
 };
+const currentTable = sessionStorage.getItem('table');
 const loadOrder = () => {
-  const orderData = localStorage.getItem('orders');
-  if(orderData){
-    order.value = JSON.parse(orderData);
-    dishIds.value = Object.values(order.value).flat().map(item => item.id);
-  }
-}
+  const allDishIds = JSON.parse(localStorage.getItem('dishIds') || '{}'); // 获取所有桌号的 dishIds
+  dishIds.value = allDishIds[currentTable] || []; // 获取当前桌号的 dishIds，默认为空数组
+};
 
 // 在组件挂载时调用 getProductList
 let intervalId: ReturnType<typeof setInterval>;

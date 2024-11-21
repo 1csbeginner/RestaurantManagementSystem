@@ -20,12 +20,18 @@
         </template>
       </el-table-column>
       <el-table-column prop="price" label="总金额"></el-table-column>
+      <el-table-column label="操作">
+        <template #default="{ row }">
+          <el-button type="success" @click="finish" v-if="!isFinishByTable[row.tablenumber]">上菜</el-button>
+        </template>
+      </el-table-column>
     </el-table>
   </el-card>
 </template>
 <script lang="ts" setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { ArrowRight } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
 
 interface CartItem {
   id: string;
@@ -41,6 +47,7 @@ interface Order {
 }
 
 const tableList = ref<Order[]>([]);
+let isFinishByTable = ref({})
 
 const getTableList = () => {
   const savedOrder = localStorage.getItem('orders');
@@ -68,6 +75,33 @@ const getTableList = () => {
   } else {
     // 如果没有数据，清空 tableList
     tableList.value = [];
+  }
+};
+
+const finish = () => {
+  // 获取当前桌号
+  const currentTable = sessionStorage.getItem('table');
+  if (!currentTable) {
+    ElMessage.error('无法获取当前桌号');
+    return;
+  }
+
+  // 获取 dishIds 和 isFinish 数据
+  const dishIdsByTable = JSON.parse(localStorage.getItem('dishIds') || '{}');
+  isFinishByTable = JSON.parse(localStorage.getItem('isFinish') || '{}');
+
+  // 检查桌号对应的数据是否存在
+  if (dishIdsByTable[currentTable]) {
+    // 删除桌号对应的菜品 ID
+    delete dishIdsByTable[currentTable];
+    localStorage.setItem('dishIds', JSON.stringify(dishIdsByTable));
+
+    isFinishByTable[currentTable] = true;
+    localStorage.setItem('isFinish', JSON.stringify(isFinishByTable));
+
+    ElMessage.success(`桌号 ${currentTable} 的菜品已上菜`);
+  } else {
+    ElMessage.warning(`桌号 ${currentTable} 没有需要上菜的菜品`);
   }
 };
 

@@ -590,6 +590,14 @@ onMounted(() => {
   if (cartData) {
     cart.value = JSON.parse(cartData);
   }
+  // 按桌号保存 isFinish 状态
+  const isFinishByTable = JSON.parse(localStorage.getItem("isFinish") || "{}"); // 如果没有数据则初始化为空对象
+  const currentTable = sessionStorage.getItem('table');
+  if (currentTable) {
+    isFinishByTable[currentTable] = false; // 设置当前桌号的 isFinish 状态为 false
+  }
+  localStorage.setItem("isFinish", JSON.stringify(isFinishByTable)); // 保存到 localStorage
+
   intervalId = setInterval(() => {
     loadTableList(); // 定时加载桌子状态
   }, 500);
@@ -599,7 +607,6 @@ onUnmounted(() => {
     clearInterval(intervalId); // 清理定时器
   }
 });
-
 
 </script>
 <style lang="less" scoped>
