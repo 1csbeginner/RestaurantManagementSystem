@@ -34,6 +34,7 @@ public class StatisticServiceImpl implements StatisticService {
         entity.setId(statistic.getId());
         entity.setPreview(statistic.getPreview());
         entity.setSort(statistic.getSort());
+        entity.setEarning(statistic.getEarning());
         entity.setGmtCreate(TimeUtil.getTime());
         Calendar calendar = Calendar.getInstance();
 
