@@ -30,7 +30,7 @@
             :default-active="activePath"
           >
             <!--只有用户可见1和4的部分功能。管理员可见234。(通过调整v-if)-->
-            <el-sub-menu index="1" v-if="isManager">
+            <el-sub-menu index="1" v-if="!isManager">
               <template #title>
                 <el-icon><KnifeFork /></el-icon>
                 <span>前台服务</span>
