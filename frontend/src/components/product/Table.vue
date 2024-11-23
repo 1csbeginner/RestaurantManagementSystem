@@ -3,7 +3,7 @@
   <el-breadcrumb :separator-icon="ArrowRight">
     <el-breadcrumb-item :to="{ path: '/home' }">首页</el-breadcrumb-item>
     <el-breadcrumb-item>后台管理</el-breadcrumb-item>
-    <el-breadcrumb-item>订单管理</el-breadcrumb-item>
+    <el-breadcrumb-item>上菜管理</el-breadcrumb-item>
   </el-breadcrumb>
 
   <!-- 卡片视图 -->
@@ -11,18 +11,17 @@
     <!-- 订单列表 -->
     <el-table :data="tableList" stripe empty-text="暂无订单！">
       <el-table-column prop="tablenumber" label="桌号"></el-table-column>
-      <el-table-column label="菜品">
-        <!-- 使用 scoped slots 来动态显示菜品 -->
-        <template #default="{ row }">
-          <div v-for="item in row.items" :key="item.id">
-            {{ item.name }} x {{ item.quantity }}
-          </div>
-        </template>
-      </el-table-column>
-      <el-table-column prop="price" label="总金额"></el-table-column>
+      <el-table-column prop="id" label="菜品编号"></el-table-column>
+      <el-table-column prop="name" label="菜品"> </el-table-column>
+      <el-table-column prop="quantity" label="数量"> </el-table-column>
+      <el-table-column prop="price" label="价格"> </el-table-column>
       <el-table-column label="操作">
         <template #default="{ row }">
-          <el-button type="success" @click="finish" v-if="!isFinishByTable[row.tablenumber]">上菜</el-button>
+        <el-button
+          size="mini"
+          type="success"
+          @click="finishDish(row.tablenumber, row)"
+        >上菜</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -34,20 +33,13 @@ import { ArrowRight } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 
 interface CartItem {
-  id: string;
+  id: number;
   name: string;
+  price: number;
   quantity: number;
-  price: number;
 }
 
-interface Order {
-  tablenumber: string;
-  items: CartItem[];
-  price: number;
-}
-
-const tableList = ref<Order[]>([]);
-let isFinishByTable = ref({})
+const tableList = ref([]);
 
 const getTableList = () => {
   const savedOrder = localStorage.getItem('orders');
@@ -56,21 +48,19 @@ const getTableList = () => {
     const orderData = JSON.parse(savedOrder);
 
     // 遍历每个桌号的订单
-    tableList.value = Object.entries(orderData).map(([table, items]: [string, CartItem[]]) => {
+    tableList.value = Object.entries(orderData).flatMap(([table, items]: [string, CartItem[]]) => {
       // 确保 items 是一个数组
       if (!Array.isArray(items)) {
-        console.error(`Expected items to be an array, but got:`, items);
         items = [items];  // 如果不是数组，将其包装成数组
       }
 
-      // 计算每个桌号的总金额
-      const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
-      return {
+      return items.map((item) => ({
         tablenumber: table,  // 桌号
-        items,  // 菜品列表
-        price: totalAmount,  // 总金额
-      };
+        id: item.id,  // 菜品编号
+        name: item.name,  // 菜品名称
+        quantity: item.quantity,  // 数量
+        price: item.price,  // 价格
+      }));
     });
   } else {
     // 如果没有数据，清空 tableList
@@ -78,31 +68,34 @@ const getTableList = () => {
   }
 };
 
-const finish = () => {
-  // 获取当前桌号
-  const currentTable = sessionStorage.getItem('table');
-  if (!currentTable) {
-    ElMessage.error('无法获取当前桌号');
+const finishDish = (table, dish) => {
+  // 从 localStorage 获取orders 和 history
+  console.log(dish)
+  const orders = JSON.parse(localStorage.getItem('orders') || '{}');
+  const historyByTable = JSON.parse(localStorage.getItem('history') || '{}');
+
+  // 确保所有数据结构都已初始化
+  if (!orders[table] || !historyByTable[table]) {
+    ElMessage.warning(`无法找到桌号 ${table} 的相关数据`);
     return;
   }
 
-  // 获取 dishIds 和 isFinish 数据
-  const dishIdsByTable = JSON.parse(localStorage.getItem('dishIds') || '{}');
-  isFinishByTable = JSON.parse(localStorage.getItem('isFinish') || '{}');
+  // 删除 orders 中对应的菜品
+  orders[table] = orders[table].filter(
+    (item) => !(item.id === dish.id && item.name === dish.name && item.price === dish.price)
+  );
+  localStorage.setItem('orders', JSON.stringify(orders));
 
-  // 检查桌号对应的数据是否存在
-  if (dishIdsByTable[currentTable]) {
-    // 删除桌号对应的菜品 ID
-    delete dishIdsByTable[currentTable];
-    localStorage.setItem('dishIds', JSON.stringify(dishIdsByTable));
+  // 更新 history 中对应菜品的状态
+  historyByTable[table] = historyByTable[table].map((item) => {
+    if (item.id === dish.id && item.name === dish.name && item.price === dish.price) {
+      return { ...item, state: true }; // 更新状态为 true
+    }
+    return item;
+  });
+  localStorage.setItem('history', JSON.stringify(historyByTable));
 
-    isFinishByTable[currentTable] = true;
-    localStorage.setItem('isFinish', JSON.stringify(isFinishByTable));
-
-    ElMessage.success(`桌号 ${currentTable} 的菜品已上菜`);
-  } else {
-    ElMessage.warning(`桌号 ${currentTable} 没有需要上菜的菜品`);
-  }
+  ElMessage.success(`已完成上菜：${dish.name}`);
 };
 
 let intervalId: ReturnType<typeof setInterval>;

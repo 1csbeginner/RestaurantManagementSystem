@@ -263,6 +263,7 @@ interface CartItem {
   quantity: number;
   price: number;
   name: string;
+  state: boolean;
 }
 
 interface Cart {
@@ -505,6 +506,7 @@ const cart = ref<Cart>({});
 
 // 添加商品到购物车，初始数量为 1
 const addToCart = (productId: string) => {
+  updateCart();
   const product = productList.value.find(p => p.id === productId);
   if (product && !cart.value[productId]) {
     cart.value[productId] = {
@@ -512,7 +514,9 @@ const addToCart = (productId: string) => {
       id: productId,
       quantity: 1,
       price: product.price,
-      name: product.name
+      name: product.name,
+      //补充菜品的订单状态
+      state: false
     };
     saveCart();
   }
@@ -520,7 +524,7 @@ const addToCart = (productId: string) => {
 
 // 增加商品数量
 const increaseQuantity = (productId: string) => {
-  console.log(productId);
+  updateCart();
   if (cart.value[productId]) {
     cart.value[productId].quantity += 1;
   }
@@ -529,7 +533,7 @@ const increaseQuantity = (productId: string) => {
 
 // 减少商品数量，若数量为 0 则移除商品
 const decreaseQuantity = (productId: string) => {
-  console.log(productId);
+  updateCart();
   if (cart.value[productId] && cart.value[productId].quantity > 1) {
     cart.value[productId].quantity -= 1;
   } else {
@@ -581,23 +585,35 @@ const getProductList = async () => {
     console.error('获取产品列表失败', error);
   }
 };
+const updateCart = () => {
+  const cartData = sessionStorage.getItem('cartForm');
+  if (cartData) {
+    cart.value = JSON.parse(cartData);
+    const productIdList = Object.keys(cart.value);
+
+    productIdList.forEach(productId => {
+      const product = productList.value.find(p => p.id === Number(productId)); // 查找对应的商品
+
+      console.log(product)
+      if (product) {
+        // 更新购物车中的菜品信息
+        cart.value[productId] = {
+          ...cart.value[productId],
+          price: product.price,               // 更新菜品价格
+          name: product.name,                 // 更新菜品名称
+        };
+      }
+    });
+
+    saveCart(); // 保存更新后的购物车数据
+  }
+};
 
 // 在组件挂载时调用 getProductList
 onMounted(() => {
   loadTableList();
   checkTableSelection();
-  const cartData = sessionStorage.getItem('cartForm');
-  if (cartData) {
-    cart.value = JSON.parse(cartData);
-  }
-  // 按桌号保存 isFinish 状态
-  const isFinishByTable = JSON.parse(localStorage.getItem("isFinish") || "{}"); // 如果没有数据则初始化为空对象
-  const currentTable = sessionStorage.getItem('table');
-  if (currentTable) {
-    isFinishByTable[currentTable] = false; // 设置当前桌号的 isFinish 状态为 false
-  }
-  localStorage.setItem("isFinish", JSON.stringify(isFinishByTable)); // 保存到 localStorage
-
+  updateCart();
   intervalId = setInterval(() => {
     loadTableList(); // 定时加载桌子状态
   }, 500);

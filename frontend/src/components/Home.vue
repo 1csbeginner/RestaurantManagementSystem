@@ -50,6 +50,10 @@
                 <span>后台服务</span>
               </template>
               <el-menu-item index="/table" >
+                <el-icon><Finished/></el-icon>
+                  上菜管理
+              </el-menu-item>
+              <el-menu-item index="/report" >
                 <el-icon><OfficeBuilding /></el-icon>
                   订单管理
               </el-menu-item>
@@ -112,10 +116,33 @@ export default{
     }
   },
   methods:{
-    logout(){
-      window.sessionStorage.clear()
-      this.$router.push('/login')
+    logout() {
+      // 获取当前桌号
+      const deleteTable = sessionStorage.getItem('table');
+
+      if (!deleteTable) {
+        console.error('未找到桌号，无法删除对应历史记录');
+        return; // 如果桌号为空，直接返回
+      }
+
+      // 删除订单历史
+      const allHistory = JSON.parse(localStorage.getItem('history') || '{}'); // 确保结构为对象
+      if (allHistory[deleteTable]) {
+        delete allHistory[deleteTable]; // 删除对应桌号的历史数据
+        localStorage.setItem('history', JSON.stringify(allHistory)); // 保存更新后的历史
+        console.log(`已删除桌号 ${deleteTable} 的历史记录`);
+      } else {
+        console.warn(`历史记录中未找到桌号 ${deleteTable}`);
+      }
+
+      // 清理 sessionStorage
+      sessionStorage.clear();
+
+      // 跳转到登录页面
+      this.$router.push('/login');
     },
+
+
     toggleCollapse(){
       this.isCollapse = !this.isCollapse
     },

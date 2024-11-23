@@ -55,8 +55,8 @@
       <el-table-column prop="sort" label="菜系"></el-table-column>
       <el-table-column label="操作">
         <template v-slot="scope">
-          <el-button type="primary" :icon="Edit"  :disabled="dishIds.includes(scope.row.id)" @click="openModifyDialog(scope.row.id)"/>
-          <el-button type="danger" :icon="Delete" :disabled="dishIds.includes(scope.row.id)" @click="remove(scope.row.id)"/>
+          <el-button type="primary" :icon="Edit"  :disabled="isDishInOrder(scope.row)" @click="openModifyDialog(scope.row.id)"/>
+          <el-button type="danger" :icon="Delete" :disabled="isDishInOrder(scope.row)" @click="remove(scope.row.id)"/>
         </template>
       </el-table-column>
     </el-table>
@@ -231,7 +231,7 @@ const queryInfo = ref({
 });
 const productList = ref([]); // 定义用户列表
 //定义购物车(检查要删除的菜是否在购物车中)
-const dishIds = ref([]);  // 定义一个空数组，用于存放所有菜品的 id
+const dishDetails = ref([]);  // 定义一个空数组，用于存放所有菜品的 id
 const total = ref(0);
 //用户表单
 //id用于修改菜品功能
@@ -668,8 +668,18 @@ const submitUpload = async (): Promise<void> => {
 };
 const currentTable = sessionStorage.getItem('table');
 const loadOrder = () => {
-  const allDishIds = JSON.parse(localStorage.getItem('dishIds') || '{}'); // 获取所有桌号的 dishIds
-  dishIds.value = allDishIds[currentTable] || []; // 获取当前桌号的 dishIds，默认为空数组
+  const allOrders = JSON.parse(localStorage.getItem('orders') || '{}'); // 获取所有桌号的 dishIds
+  dishDetails.value = allOrders[currentTable] || []; // 获取当前桌号的 dishIds，默认为空数组
+};
+//处理操作逻辑（是否允许操作？？）
+const isDishInOrder = (dish) => {
+    // 检查 dishDetails 中是否存在与当前行完全匹配的菜品（id、name、price）
+    return dishDetails.value && dishDetails.value.some(
+      (item) =>
+        item.id === dish.id &&
+        item.name === dish.name &&
+        item.price === dish.price
+    );
 };
 
 // 在组件挂载时调用 getProductList
