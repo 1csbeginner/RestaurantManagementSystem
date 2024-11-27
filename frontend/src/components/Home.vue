@@ -120,11 +120,6 @@ export default{
       // 获取当前桌号
       const deleteTable = sessionStorage.getItem('table');
 
-      if (!deleteTable) {
-        console.error('未找到桌号，无法删除对应历史记录');
-        return; // 如果桌号为空，直接返回
-      }
-
       // 删除订单历史
       const allHistory = JSON.parse(localStorage.getItem('history') || '{}'); // 确保结构为对象
       if (allHistory[deleteTable]) {

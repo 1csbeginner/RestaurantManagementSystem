@@ -231,7 +231,7 @@ const queryInfo = ref({
 });
 const productList = ref([]); // 定义用户列表
 //定义购物车(检查要删除的菜是否在购物车中)
-const dishDetails = ref([]);  // 定义一个空数组，用于存放所有菜品的 id
+const dishDetails = ref({});  // 定义一个空数组，用于存放所有菜品的 id
 const total = ref(0);
 //用户表单
 //id用于修改菜品功能
@@ -666,20 +666,19 @@ const submitUpload = async (): Promise<void> => {
     console.error('上传错误:', error);
   }
 };
-const currentTable = sessionStorage.getItem('table');
 const loadOrder = () => {
   const allOrders = JSON.parse(localStorage.getItem('orders') || '{}'); // 获取所有桌号的 dishIds
-  dishDetails.value = allOrders[currentTable] || []; // 获取当前桌号的 dishIds，默认为空数组
+  dishDetails.value = allOrders || {}; // 获取当前桌号的 dishIds，默认为空对象
 };
 //处理操作逻辑（是否允许操作？？）
-const isDishInOrder = (dish) => {
-    // 检查 dishDetails 中是否存在与当前行完全匹配的菜品（id、name、price）
-    return dishDetails.value && dishDetails.value.some(
-      (item) =>
-        item.id === dish.id &&
-        item.name === dish.name &&
-        item.price === dish.price
-    );
+const isDishInOrder = (dish: { id: string; name: string; price: number }) => {
+  // 检查 dishDetails 中是否存在与当前行完全匹配的菜品（id、name、price）
+  const allDishes = Object.values(dishDetails.value).flat();
+  return allDishes.some((item: any) =>
+    item.id === dish.id &&
+    item.name === dish.name &&
+    item.price === dish.price
+  );
 };
 
 // 在组件挂载时调用 getProductList
