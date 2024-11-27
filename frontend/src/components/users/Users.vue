@@ -361,7 +361,6 @@ const userChange = async (row) => {
 };
 //删除用户提示
 import { ElMessageBox } from 'element-plus'
-import { s } from 'vite/dist/node/types.d-aGj9QkWt';
 
 const remove = (userId) => {
   ElMessageBox.confirm(
