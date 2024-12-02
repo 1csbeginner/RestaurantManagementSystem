@@ -19,9 +19,10 @@ export default {
   async created() {
     // 获取 sessionStorage 中的id(注册用户)
     this.id=sessionStorage.getItem('id');
+
     //获取用户名（登录用户和注册用户）
     this.name = sessionStorage.getItem('name');
-
+   
     // 判断用户名是否存在
     if (this.id) {
       try {

@@ -2,7 +2,7 @@
   <div class="login_container">
     <div class="login_box">
       <div class="avatar_box">
-        <img src="../assets/logo.svg" alt="logo" />
+        <img src="../assets/favicon.ico" alt="logo" />
       </div>
       <!--登录表单-->
       <el-form v-if="isLoginMode" ref="loginFormRef" :model="loginForm" :rules="loginFormRules"
@@ -173,7 +173,10 @@ export default {
             //跳转到首页
             this.$router.push("/home");
           } else {
-            ElMessage.error("登录失败，用户不存在或密码错误！");
+            if(res.data.total === 0)
+                ElMessage.error("用户不存在");
+            else if(res.data.records[0].password !== this.loginForm.password)
+                ElMessage.error("密码错误");
           }
         } else {
           return
@@ -249,6 +252,7 @@ export default {
     img{
       width: 100%;
       height: 100%;
+      object-fit: cover;
       border-radius: 50%;
     }
   }

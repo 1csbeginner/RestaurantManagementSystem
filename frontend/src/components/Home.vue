@@ -102,7 +102,15 @@ export default{
     }
   },
   async created() {
-    const id = sessionStorage.getItem('id'); // 获取 id
+    let id = sessionStorage.getItem('id'); // 获取 id
+    const name = sessionStorage.getItem('name'); // 获取用户名
+    if(!id){
+      const { data: res } = await this.$http.post('/user/list/1/9999', { name: name });
+      if (res.data.records.length != 0) {
+        id = res.data.records[0].id;
+        window.sessionStorage.setItem('id', id);
+      }
+    }
     const url = `/user/get-one-user/${id}`; // 使用模板字符串拼接 URL
     const { data: res } = await this.$http.get(url); // 发起请求
 
